@@ -1,11 +1,11 @@
 /** Elevated surface card: layered dark surface + 1px border + soft shadow. */
 import { ReactNode } from 'react';
-import { StyleSheet, View, ViewStyle } from 'react-native';
+import { StyleProp, StyleSheet, View, ViewStyle } from 'react-native';
 import { colors, radii, shadow, spacing } from '@/theme';
 
 interface CardProps {
   children: ReactNode;
-  style?: ViewStyle;
+  style?: StyleProp<ViewStyle>;
   padded?: boolean;
 }
 
