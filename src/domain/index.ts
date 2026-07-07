@@ -7,3 +7,4 @@ export * from './dependency';
 export * from './taper';
 export * from './achievements';
 export * from './weeklyReport';
+export * from './dangerHour';

@@ -1,11 +1,12 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Wind } from 'lucide-react-native';
 import { AppText, Button, Card, CheckInPrompt, LungVisual, StreakRing, Screen } from '@/ui';
 import { colors, spacing } from '@/theme';
-import { useQuitStore } from '@/store';
+import { useQuitStore, useSettingsStore } from '@/store';
 import { useNow } from '@/app-core/useNow';
+import { scheduleAllNotifications } from '@/app-core/notifications';
 import { currentStreakDays, liveDuration, lungStage, milestoneProgress } from '@/domain/streak';
 import { formatMoney, moneySaved } from '@/domain/money';
 import { taperStatus } from '@/domain/taper';
@@ -19,12 +20,28 @@ export default function Home() {
   const submitCheckIn = useQuitStore((s) => s.submitCheckIn);
   const puffsToday = useQuitStore((s) => s.puffsToday);
   const logPuff = useQuitStore((s) => s.logPuff);
+  const cravings = useQuitStore((s) => s.cravings);
+  const notificationPrefs = useSettingsStore((s) => s.notifications);
   const now = useNow(1000);
 
   const todaysMood = useMemo(
     () => checkIns.find((c) => c.date === localDateKey(now))?.mood,
     [checkIns, now],
   );
+
+  // Reschedule notifications when the plan's streak start or craving log changes
+  // (e.g. after onboarding, a relapse reset, or new danger-hour data) — not on every
+  // per-second tick from useNow.
+  useEffect(() => {
+    if (!plan) return;
+    void scheduleAllNotifications({
+      prefs: notificationPrefs,
+      streakStart: new Date(plan.streakStart),
+      streakDays: currentStreakDays(new Date(plan.streakStart), new Date()),
+      cravings,
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- reschedule only on plan/cravings change, prefs edited separately in Settings
+  }, [plan?.streakStart, cravings.length]);
 
   if (!plan) {
     return (
