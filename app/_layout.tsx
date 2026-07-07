@@ -42,6 +42,7 @@ export default function RootLayout() {
           <Stack.Screen name="paywall" options={{ presentation: 'modal' }} />
           <Stack.Screen name="(app)" />
           <Stack.Screen name="panic" options={{ presentation: 'fullScreenModal', animation: 'fade' }} />
+          <Stack.Screen name="relapse" options={{ presentation: 'fullScreenModal', animation: 'fade' }} />
         </Stack>
       </SafeAreaProvider>
     </GestureHandlerRootView>

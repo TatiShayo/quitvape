@@ -8,3 +8,7 @@ export { OptionCard } from './OptionCard';
 export { QuizProgress } from './QuizProgress';
 export { Gauge } from './Gauge';
 export { Odometer } from './Odometer';
+export { LungVisual } from './LungVisual';
+export { StreakRing } from './StreakRing';
+export { CheckInPrompt } from './CheckInPrompt';
+export { WhyIQuitReveal } from './WhyIQuitReveal';
