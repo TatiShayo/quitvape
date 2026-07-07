@@ -1,5 +1,5 @@
 import { Tabs } from 'expo-router';
-import { Home, Users, Sparkles, Settings as SettingsIcon } from 'lucide-react-native';
+import { Home, HeartPulse, Users, Sparkles, Settings as SettingsIcon } from 'lucide-react-native';
 import { colors, fontFamily } from '@/theme';
 
 export default function AppTabsLayout() {
@@ -20,6 +20,10 @@ export default function AppTabsLayout() {
       <Tabs.Screen
         name="home"
         options={{ title: 'Home', tabBarIcon: ({ color, size }) => <Home color={color} size={size} /> }}
+      />
+      <Tabs.Screen
+        name="health"
+        options={{ title: 'Health', tabBarIcon: ({ color, size }) => <HeartPulse color={color} size={size} /> }}
       />
       <Tabs.Screen
         name="community"

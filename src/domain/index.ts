@@ -5,3 +5,4 @@ export * from './streak';
 export * from './money';
 export * from './dependency';
 export * from './taper';
+export * from './achievements';
