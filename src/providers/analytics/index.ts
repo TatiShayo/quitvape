@@ -12,9 +12,12 @@ import { AnalyticsProps, AnalyticsProvider } from '../types';
 /** Keys we refuse to send even if a caller passes them by mistake. */
 const BLOCKED_KEY = /(relapse|craving|trigger|quit_?date|mood|handle|note|body|message)/i;
 
-function scrub(props?: AnalyticsProps): AnalyticsProps | undefined {
+/** Scrubbed props never contain `undefined` values (PostHog's JSON type disallows it). */
+type ScrubbedProps = Record<string, string | number | boolean>;
+
+function scrub(props?: AnalyticsProps): ScrubbedProps | undefined {
   if (!props) return undefined;
-  const out: AnalyticsProps = {};
+  const out: ScrubbedProps = {};
   for (const [k, v] of Object.entries(props)) {
     if (BLOCKED_KEY.test(k)) continue;
     if (v !== undefined) out[k] = v;
