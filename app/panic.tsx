@@ -5,6 +5,7 @@ import * as Haptics from 'expo-haptics';
 import Animated, {
   Easing,
   cancelAnimation,
+  interpolateColor,
   useAnimatedStyle,
   useSharedValue,
   withTiming,
@@ -33,6 +34,15 @@ const PHASES: { phase: Phase; label: string; ms: number }[] = [
 // (BUILD_PROMPT signature interaction: breathing first, then their reasons fade in).
 const CYCLES_BEFORE_REVEAL = 2;
 
+// Background "temperature" per phase (BUILD_PROMPT: "background gradient temperature
+// shifting with each phase"). 0 = cool/deep (inhale — drawing in), 1 = warm (exhale —
+// release). Hold sits at the midpoint. Interpolated continuously so the shift itself
+// breathes rather than cutting between phases.
+const TEMPERATURE_BY_PHASE: Record<Phase, number> = { inhale: 0, hold: 0.5, exhale: 1 };
+const BG_COOL = '#0B1220';
+const BG_MID = '#141225';
+const BG_WARM = '#1F1420';
+
 export default function Panic() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -44,10 +54,14 @@ export default function Panic() {
   const [cycle, setCycle] = useState(0);
   const [revealed, setRevealed] = useState(false);
   const scale = useSharedValue(0.6);
+  const temperature = useSharedValue(TEMPERATURE_BY_PHASE.inhale);
 
   useEffect(() => {
     getAnalytics().capture(AnalyticsEvent.panicButtonOpened);
-    return () => cancelAnimation(scale);
+    return () => {
+      cancelAnimation(scale);
+      cancelAnimation(temperature);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- fire once on mount only
   }, []);
 
@@ -75,9 +89,16 @@ export default function Panic() {
         runOnJS(setPhaseIndex)(nextIndex);
       },
     );
-  }, [phaseIndex, cycle, revealed, scale]);
+    temperature.value = withTiming(TEMPERATURE_BY_PHASE[phase], {
+      duration: ms,
+      easing: Easing.inOut(Easing.ease),
+    });
+  }, [phaseIndex, cycle, revealed, scale, temperature]);
 
   const orbStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
+  const backgroundStyle = useAnimatedStyle(() => ({
+    backgroundColor: interpolateColor(temperature.value, [0, 0.5, 1], [BG_COOL, BG_MID, BG_WARM]),
+  }));
 
   const saved = plan
     ? moneySaved(plan.vapeCostPerWeek, liveDuration(new Date(plan.streakStart), now).totalMs)
@@ -98,7 +119,13 @@ export default function Panic() {
   }
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
+    <Animated.View
+      style={[
+        styles.container,
+        backgroundStyle,
+        { paddingTop: insets.top, paddingBottom: insets.bottom },
+      ]}
+    >
       <Pressable
         accessibilityRole="button"
         accessibilityLabel="Close panic mode"
@@ -141,14 +168,13 @@ export default function Panic() {
           </View>
         </>
       ) : null}
-    </View>
+    </Animated.View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.bg,
     paddingHorizontal: spacing.xl,
     justifyContent: 'space-between',
   },

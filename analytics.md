@@ -27,8 +27,8 @@ is unset (see NEEDS HUMAN in PROJECT_STATE.md).
 |---|---|---|---|
 | `panic_button_opened` | `app/panic.tsx` | — | Signature-interaction usage (craving support entered). |
 | `craving_resisted` | `app/panic.tsx` | — | User marks "Craving passed" after the breathing sequence. |
-| `relapse_logged` | `app/panic.tsx` | — | User marks "I slipped." No trigger/intensity details sent (health-adjacent). |
-| `check_in_submitted` | (wired in core-loop milestone) | — | Daily mood check-in submitted. Mood value itself is never sent. |
+| `relapse_logged` | `app/relapse.tsx` | — | User confirms a logged slip on the compassion-flow screen. No trigger/intensity details sent (health-adjacent). |
+| `check_in_submitted` | `app/(app)/home.tsx` | — | Daily mood check-in submitted. Mood value itself is never sent. |
 | `share_card_exported` | (wired in achievements milestone) | `card_type` | Achievement/weekly-report share card exported via `react-native-view-shot`. |
 
 ## Funnels to build in PostHog (day 1, PLAYBOOK Part 5)
