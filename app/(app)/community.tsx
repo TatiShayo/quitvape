@@ -18,7 +18,7 @@ export default function Community() {
         <AppText variant="overline" color="accent">
           Community
         </AppText>
-        <AppText variant="title">You're not quitting alone</AppText>
+        <AppText variant="title">You&apos;re not quitting alone</AppText>
       </View>
       <FlatList
         data={posts ?? []}

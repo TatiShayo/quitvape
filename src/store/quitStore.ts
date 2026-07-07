@@ -10,9 +10,7 @@ import {
   CravingEvent,
   CravingTrigger,
   MoodValue,
-  QuitMethod,
   QuitPlan,
-  QuitReason,
   Relapse,
 } from '@/domain/types';
 import { localDateKey } from '@/domain/time';

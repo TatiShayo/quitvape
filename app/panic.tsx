@@ -102,7 +102,7 @@ export default function Panic() {
 
       <View style={styles.why}>
         <AppText variant="caption" color="textTertiary" center>
-          You've saved
+          You&apos;ve saved
         </AppText>
         <AppText variant="displayM" color="money" tabular center>
           ${formatMoney(saved)}

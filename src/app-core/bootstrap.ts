@@ -18,7 +18,6 @@ export async function bootstrap(): Promise<void> {
   if (__DEV__) {
     const missing = missingKeys();
     if (missing.length > 0) {
-      // eslint-disable-next-line no-console
       console.warn(
         '[QuitVape] Running with mock providers for missing keys (NEEDS HUMAN):\n  - ' +
           missing.join('\n  - '),

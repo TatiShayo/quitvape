@@ -1,4 +1,4 @@
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet } from 'react-native';
 import { AppText, Card, Screen } from '@/ui';
 import { spacing } from '@/theme';
 
@@ -19,7 +19,7 @@ export default function Coach() {
       <Card>
         <AppText variant="body" color="textSecondary">
           A private, judgment-free coach trained on CBT techniques is coming here. It
-          runs through a secure server proxy — your messages never train anyone else's
+          runs through a secure server proxy — your messages never train anyone else&apos;s
           model, and it never gives medical advice.
         </AppText>
       </Card>
