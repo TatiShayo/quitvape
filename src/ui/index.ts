@@ -12,3 +12,4 @@ export { LungVisual } from './LungVisual';
 export { StreakRing } from './StreakRing';
 export { CheckInPrompt } from './CheckInPrompt';
 export { WhyIQuitReveal } from './WhyIQuitReveal';
+export { ShareCard } from './ShareCard';

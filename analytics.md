@@ -29,7 +29,7 @@ is unset (see NEEDS HUMAN in PROJECT_STATE.md).
 | `craving_resisted` | `app/panic.tsx` | — | User marks "Craving passed" after the breathing sequence. |
 | `relapse_logged` | `app/relapse.tsx` | — | User confirms a logged slip on the compassion-flow screen. No trigger/intensity details sent (health-adjacent). |
 | `check_in_submitted` | `app/(app)/home.tsx` | — | Daily mood check-in submitted. Mood value itself is never sent. |
-| `share_card_exported` | (wired in achievements milestone) | `card_type` | Achievement/weekly-report share card exported via `react-native-view-shot`. |
+| `share_card_exported` | `src/app-core/useShareCard.ts` | `card_type` (`achievement`\|`weekly_report`) | Share card captured + system share sheet opened, from `app/achievements.tsx` or `app/weekly-report.tsx`. |
 
 ## Funnels to build in PostHog (day 1, PLAYBOOK Part 5)
 1. Acquisition -> `quiz_screen_viewed` (screen 0) -> `quiz_completed` -> `paywall_viewed` -> `trial_started`/`purchase_completed` -> retained (D1/D7/D30 on app opens).

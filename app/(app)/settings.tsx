@@ -66,6 +66,12 @@ export default function Settings() {
       </Card>
 
       <Card style={styles.card}>
+        <AppText variant="bodyStrong">Progress</AppText>
+        <Button label="Weekly report" onPress={() => router.push('/weekly-report')} variant="secondary" />
+        <Button label="Achievements" onPress={() => router.push('/achievements')} variant="secondary" />
+      </Card>
+
+      <Card style={styles.card}>
         <AppText variant="bodyStrong">Get help quitting</AppText>
         <AppText variant="caption" color="textSecondary">
           {hotline.name}: {hotline.phone}

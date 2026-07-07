@@ -130,6 +130,13 @@ export default function Home() {
         leftIcon={<Wind color={colors.textInverse} size={20} />}
         style={styles.panic}
       />
+
+      <Button
+        label="Achievements"
+        onPress={() => router.push('/achievements')}
+        variant="secondary"
+        style={styles.achievements}
+      />
     </Screen>
   );
 }
@@ -144,4 +151,5 @@ const styles = StyleSheet.create({
   taperCard: { marginBottom: spacing.lg, gap: spacing.sm },
   logPuffButton: { marginTop: spacing.sm },
   panic: { marginTop: spacing.xl, marginBottom: spacing.md },
+  achievements: { marginBottom: spacing.md },
 });

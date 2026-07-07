@@ -6,3 +6,4 @@ export * from './money';
 export * from './dependency';
 export * from './taper';
 export * from './achievements';
+export * from './weeklyReport';
