@@ -26,7 +26,7 @@ export function QuizFrame({
   scroll = false,
 }: QuizFrameProps) {
   return (
-    <Screen scroll={scroll} contentStyle={styles.screenContent}>
+    <Screen scroll={scroll}>
       <QuizProgress progress={progress} />
       <View style={styles.header}>
         <AppText variant="displayM" style={styles.title}>
@@ -38,7 +38,9 @@ export function QuizFrame({
           </AppText>
         ) : null}
       </View>
-      <View style={styles.body}>{children}</View>
+      {/* In scroll mode the body sizes to its content; in fixed mode it flexes to
+          fill the screen so the CTA pins to the bottom. */}
+      <View style={scroll ? styles.bodyScroll : styles.body}>{children}</View>
       {onContinue ? (
         <Button label={ctaLabel} onPress={onContinue} disabled={ctaDisabled} haptic style={styles.cta} />
       ) : null}
@@ -47,10 +49,10 @@ export function QuizFrame({
 }
 
 const styles = StyleSheet.create({
-  screenContent: { flexGrow: 1 },
   header: { marginTop: spacing.xl, gap: spacing.sm },
   title: {},
   subtitle: {},
   body: { flex: 1, marginTop: spacing.xxl },
-  cta: { marginTop: spacing.lg },
+  bodyScroll: { marginTop: spacing.xxl },
+  cta: { marginTop: spacing.xl },
 });
