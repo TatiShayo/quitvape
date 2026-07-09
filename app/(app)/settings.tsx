@@ -6,7 +6,8 @@ import { colors, spacing } from '@/theme';
 import { getBackend, getErrors, getPurchasesProvider } from '@/providers';
 import { useLocalDataWipe } from '@/app-core/useDataDeletion';
 import { cancelAllQuitVapeNotifications, scheduleAllNotifications } from '@/app-core/notifications';
-import { NOT_MEDICAL_ADVICE, QUIT_HOTLINES } from '@/content/disclaimers';
+import { useHotline } from '@/app-core/useHotline';
+import { NOT_MEDICAL_ADVICE } from '@/content/disclaimers';
 import { NotificationPrefs, useQuitStore, useSettingsStore } from '@/store';
 import { currentStreakDays } from '@/domain/streak';
 
@@ -23,7 +24,7 @@ export default function Settings() {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const wipeLocal = useLocalDataWipe();
-  const hotline = QUIT_HOTLINES[0];
+  const hotline = useHotline();
   const notifications = useSettingsStore((s) => s.notifications);
   const setNotificationPref = useSettingsStore((s) => s.setNotificationPref);
   const plan = useQuitStore((s) => s.plan);

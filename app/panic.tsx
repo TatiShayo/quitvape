@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Linking, Pressable, StyleSheet, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import Animated, {
@@ -16,6 +16,7 @@ import { AppText, Button, WhyIQuitReveal } from '@/ui';
 import { colors, spacing } from '@/theme';
 import { useQuitStore } from '@/store';
 import { useNow } from '@/app-core/useNow';
+import { useHotline } from '@/app-core/useHotline';
 import { AnalyticsEvent, getAnalytics } from '@/providers';
 import { formatMoney, moneySaved } from '@/domain/money';
 import { liveDuration } from '@/domain/streak';
@@ -49,6 +50,7 @@ export default function Panic() {
   const plan = useQuitStore((s) => s.plan);
   const logCraving = useQuitStore((s) => s.logCraving);
   const now = useNow(1000);
+  const hotline = useHotline();
 
   const [phaseIndex, setPhaseIndex] = useState(0);
   const [cycle, setCycle] = useState(0);
@@ -165,6 +167,17 @@ export default function Panic() {
           <View style={styles.actions}>
             <Button label="Craving passed" onPress={onResisted} haptic />
             <Button label="I slipped" onPress={onSlipped} variant="ghost" />
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`Call ${hotline.name} at ${hotline.phone}`}
+              onPress={() => void Linking.openURL(hotline.tel)}
+              hitSlop={8}
+              style={styles.hotlineLink}
+            >
+              <AppText variant="caption" color="textTertiary" center>
+                Need to talk to someone right now? Call {hotline.phone}
+              </AppText>
+            </Pressable>
           </View>
         </>
       ) : null}
@@ -195,4 +208,5 @@ const styles = StyleSheet.create({
   phaseLabel: { position: 'absolute' },
   why: { gap: spacing.xs, marginBottom: spacing.xl },
   actions: { gap: spacing.md, paddingBottom: spacing.lg },
+  hotlineLink: { paddingVertical: spacing.xs },
 });

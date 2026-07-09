@@ -1,0 +1,44 @@
+[
+  {
+    "region": "US",
+    "name": "National Quitline",
+    "phone": "1-800-QUIT-NOW",
+    "tel": "tel:18007848669",
+    "url": "https://www.cdc.gov/tobacco/quit_smoking/"
+  },
+  {
+    "region": "GB",
+    "name": "NHS Quit Smoking",
+    "phone": "0300 123 1044",
+    "tel": "tel:03001231044",
+    "url": "https://www.nhs.uk/better-health/quit-smoking/"
+  },
+  {
+    "region": "AU",
+    "name": "Quitline",
+    "phone": "13 7848",
+    "tel": "tel:137848",
+    "url": "https://www.quit.org.au/"
+  },
+  {
+    "region": "CA",
+    "name": "Smokers' Helpline",
+    "phone": "1-877-513-5333",
+    "tel": "tel:18775135333",
+    "url": "https://smokershelpline.ca/"
+  },
+  {
+    "region": "NZ",
+    "name": "Quitline",
+    "phone": "0800 778 778",
+    "tel": "tel:0800778778",
+    "url": "https://www.quit.org.nz/"
+  },
+  {
+    "region": "IE",
+    "name": "HSE QUIT Team",
+    "phone": "1800 201 203",
+    "tel": "tel:1800201203",
+    "url": "https://www2.hse.ie/living-well/quit-smoking/"
+  }
+]
