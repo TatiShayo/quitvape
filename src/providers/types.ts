@@ -126,6 +126,8 @@ export interface BackendProvider {
   getBuddy(): Promise<BuddyInfo | null>;
   createBuddyInvite(): Promise<BuddyInfo>;
   acceptBuddyInvite(token: string): Promise<BuddyInfo>;
+  /** Tap-to-send preset only (no chat), scoped to one active buddy pairing. */
+  sendBuddyEncouragement(buddyId: string, presetId: EncouragementPresetId): Promise<void>;
   /**
    * Pushes only the current streak day count to the narrow `buddy_streaks` table (the
    * one deliberate exception to "health data stays local" — readable ONLY by this

@@ -124,6 +124,37 @@ export async function scheduleNextMilestone(streakStart: Date, streakDays: numbe
   });
 }
 
+/**
+ * Buddy milestone/relapse notifications (BUILD_PROMPT feature 12). There is no real
+ * push-delivery transport in this build (expo-notifications here is LOCAL-only, and no
+ * push-token/server-push infra exists — NEEDS HUMAN if cross-device delivery is wanted).
+ * These fire immediately (trigger: null) on THIS device when `useBuddy` detects, on a
+ * foreground refresh, that the paired buddy's synced streak crossed a milestone or
+ * dropped back near zero (a relapse) since the last time it was checked — a pragmatic
+ * poll-on-foreground stand-in for a real push notification from the other device.
+ */
+export async function notifyBuddyMilestone(days: number): Promise<void> {
+  if (!(await requestNotificationPermission())) return;
+  await Notifications.scheduleNotificationAsync({
+    content: {
+      title: 'Your buddy hit a milestone',
+      body: `They just reached ${days} days vape-free. Send them a boost.`,
+    },
+    trigger: null,
+  });
+}
+
+export async function notifyBuddyRelapse(): Promise<void> {
+  if (!(await requestNotificationPermission())) return;
+  await Notifications.scheduleNotificationAsync({
+    content: {
+      title: 'Your buddy had a hard moment',
+      body: 'They logged a slip and started again. A little encouragement goes a long way.',
+    },
+    trigger: null,
+  });
+}
+
 /** Cancels every category. Used on relapse-reset (milestones re-derive from new start) and data deletion. */
 export async function cancelAllQuitVapeNotifications(): Promise<void> {
   const scheduled = await Notifications.getAllScheduledNotificationsAsync();

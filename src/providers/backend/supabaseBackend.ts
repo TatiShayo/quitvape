@@ -157,6 +157,10 @@ export function createSupabaseBackend(client: SupabaseClient): BackendProvider {
       if (error || !data) throw new Error('That invite is invalid, already used, or has expired.');
       return buddyRowToInfo(data as BuddyRow);
     },
+    async sendBuddyEncouragement(buddyId, presetId) {
+      const { error } = await client.rpc('send_buddy_encouragement', { buddy_id: buddyId, preset_id: presetId });
+      if (error) throw new Error('Could not send that right now.');
+    },
     async syncMyStreak(streakDays) {
       if (!userId) return;
       // Own-row upsert only; RLS forbids writing anyone else's streak.

@@ -417,6 +417,74 @@ create policy "buddy_streaks_update_own"
   with check (auth.uid() = user_id);
 
 -- ---------------------------------------------------------------------------------
+-- buddy_encouragements — preset-only "tap to send" for the 1:1 buddy pairing (BUILD_
+-- PROMPT feature 12: "tap-to-send preset encouragements... NO chat — presets only").
+-- Distinct from community_encouragements (which is post-scoped); this is pairing-scoped.
+-- Readable only by the two paired users, written only through the RPC (validates the
+-- sender is actually part of an active pairing).
+-- ---------------------------------------------------------------------------------
+create table if not exists public.buddy_encouragements (
+  id          uuid primary key default gen_random_uuid(),
+  buddy_id    uuid not null references public.buddies (id) on delete cascade,
+  sender_id   uuid not null references auth.users (id) on delete cascade,
+  preset_id   text not null check (preset_id in ('keep_going', 'proud_of_you', 'you_got_this', 'one_day_at_a_time', 'sending_strength')),
+  created_at  timestamptz not null default now()
+);
+
+create index if not exists buddy_encouragements_buddy_id_idx on public.buddy_encouragements (buddy_id, created_at desc);
+
+alter table public.buddy_encouragements enable row level security;
+
+create policy "buddy_encouragements_select_paired"
+  on public.buddy_encouragements for select
+  to authenticated
+  using (
+    exists (
+      select 1 from public.buddies b
+      where b.id = buddy_encouragements.buddy_id
+        and (b.user_a = auth.uid() or b.user_b = auth.uid())
+    )
+  );
+
+create policy "buddy_encouragements_no_direct_write"
+  on public.buddy_encouragements for insert
+  to authenticated
+  with check (false);
+
+create or replace function public.send_buddy_encouragement(buddy_id uuid, preset_id text)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  sender uuid := auth.uid();
+  is_member boolean;
+begin
+  if sender is null then
+    raise exception 'Not authenticated.' using errcode = '42501';
+  end if;
+
+  select exists (
+    select 1 from public.buddies b
+    where b.id = send_buddy_encouragement.buddy_id
+      and b.paired_at is not null
+      and (b.user_a = sender or b.user_b = sender)
+  ) into is_member;
+
+  if not is_member then
+    raise exception 'Not part of this buddy pairing.' using errcode = '42501';
+  end if;
+
+  insert into public.buddy_encouragements (buddy_id, sender_id, preset_id)
+  values (send_buddy_encouragement.buddy_id, sender, send_buddy_encouragement.preset_id);
+end;
+$$;
+
+revoke all on function public.send_buddy_encouragement(uuid, text) from public;
+grant execute on function public.send_buddy_encouragement(uuid, text) to authenticated;
+
+-- ---------------------------------------------------------------------------------
 -- delete_all_my_data() — GDPR / Apple account-deletion requirement. Wipes every row
 -- this user owns across every table above, then the client signs the anon session out.
 -- ---------------------------------------------------------------------------------
@@ -438,6 +506,7 @@ begin
   delete from public.community_posts where user_id = uid;
   delete from public.craving_events where user_id = uid;
   delete from public.buddy_streaks where user_id = uid;
+  delete from public.buddy_encouragements where sender_id = uid;
   delete from public.buddies where user_a = uid or user_b = uid;
 end;
 $$;

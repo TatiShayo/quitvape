@@ -34,6 +34,8 @@ export interface MockBackendStore {
    * multiple simulated sessions share a store, as in the isolation test. */
   postOwners: Map<string, string>;
   reportsByPostAndUser: Set<string>;
+  /** `postId:senderId:presetId` — mirrors the DB's unique(post_id, sender_id, preset_id). */
+  encouragementsSent: Set<string>;
   buddies: BuddyRow[];
   /** Mirrors the real `buddy_streaks` table: user id -> their own reported streak. */
   streaksByUser: Map<string, number>;
@@ -79,6 +81,7 @@ export function createMockBackendStore(): MockBackendStore {
     posts: seedPosts(),
     postOwners: new Map(),
     reportsByPostAndUser: new Set(),
+    encouragementsSent: new Set(),
     buddies: [],
     streaksByUser: new Map(),
   };
@@ -165,6 +168,10 @@ export function createMockBackend(store: MockBackendStore = createMockBackendSto
       store.posts = store.posts.map((p) => (p.id === postId ? { ...p, reportCount: newCount } : p));
     },
     async sendEncouragement(postId, presetId: EncouragementPresetId) {
+      if (!userId) throw new Error('Not authenticated.');
+      const key = `${postId}:${userId}:${presetId}`;
+      if (store.encouragementsSent.has(key)) return;
+      store.encouragementsSent.add(key);
       store.posts = store.posts.map((p) => {
         if (p.id !== postId) return p;
         const current = p.encouragements[presetId] ?? 0;
@@ -199,6 +206,15 @@ export function createMockBackend(store: MockBackendStore = createMockBackendSto
       store.buddies = store.buddies.map((b) => (b.id === row.id ? row : b));
       return toBuddyInfo(row, userId, store) as BuddyInfo;
     },
+    async sendBuddyEncouragement(buddyId) {
+      if (!userId) throw new Error('Not authenticated.');
+      const row = store.buddies.find((b) => b.id === buddyId);
+      if (!row || !row.pairedAt || (row.userA !== userId && row.userB !== userId)) {
+        throw new Error('Not part of this buddy pairing.');
+      }
+      // No inbound-notification path in the mock (mirrors the real app: buddy-to-buddy
+      // encouragements have no push-delivery transport in this build — see NEEDS HUMAN).
+    },
     async syncMyStreak(streakDays) {
       if (!userId) return;
       store.streaksByUser.set(userId, streakDays);
@@ -212,6 +228,9 @@ export function createMockBackend(store: MockBackendStore = createMockBackendSto
       }
       for (const key of [...store.reportsByPostAndUser]) {
         if (key.endsWith(`:${mine}`)) store.reportsByPostAndUser.delete(key);
+      }
+      for (const key of [...store.encouragementsSent]) {
+        if (key.includes(`:${mine}:`)) store.encouragementsSent.delete(key);
       }
       store.buddies = store.buddies.filter((b) => b.userA !== mine && b.userB !== mine);
       store.streaksByUser.delete(mine);

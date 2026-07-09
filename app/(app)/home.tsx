@@ -8,6 +8,7 @@ import { useQuitStore, useSettingsStore } from '@/store';
 import { useNow } from '@/app-core/useNow';
 import { scheduleAllNotifications } from '@/app-core/notifications';
 import { useReviewPrompt } from '@/app-core/useReviewPrompt';
+import { useBuddy } from '@/app-core/useBuddy';
 import { currentStreakDays, liveDuration, lungStage, milestoneProgress } from '@/domain/streak';
 import { formatMoney, moneySaved } from '@/domain/money';
 import { taperStatus } from '@/domain/taper';
@@ -34,6 +35,11 @@ export default function Home() {
   // never after a relapse/craving (0 when there's no plan yet). Mounted only here.
   const streakDaysForReview = plan ? currentStreakDays(new Date(plan.streakStart), now) : 0;
   useReviewPrompt(streakDaysForReview);
+
+  // Accountability buddy (BUILD_PROMPT feature 12): "paired users see each other's
+  // streak on home". Hook is safe to mount unconditionally (no-ops until an anon
+  // session/backend is available).
+  const { buddy } = useBuddy();
 
   // Reschedule notifications when the plan's streak start or craving log changes
   // (e.g. after onboarding, a relapse reset, or new danger-hour data) — not on every
@@ -138,6 +144,25 @@ export default function Home() {
         </Card>
       ) : null}
 
+      {buddy?.paired ? (
+        <Card style={styles.buddyCard}>
+          <AppText variant="caption" color="textTertiary">
+            Buddy streak
+          </AppText>
+          <View style={styles.buddyRow}>
+            <AppText variant="displayM" tabular color="accent">
+              {days}d
+            </AppText>
+            <AppText variant="body" color="textTertiary">
+              vs
+            </AppText>
+            <AppText variant="displayM" tabular>
+              {buddy.buddyStreakDays ?? 0}d
+            </AppText>
+          </View>
+        </Card>
+      ) : null}
+
       <CheckInPrompt
         todaysMood={todaysMood}
         onSubmit={(mood) => {
@@ -160,6 +185,13 @@ export default function Home() {
         variant="secondary"
         style={styles.achievements}
       />
+
+      <Button
+        label={buddy?.paired ? 'Buddy' : 'Invite a buddy'}
+        onPress={() => router.push('/buddy')}
+        variant="secondary"
+        style={styles.achievements}
+      />
     </Screen>
   );
 }
@@ -171,6 +203,8 @@ const styles = StyleSheet.create({
   lungRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.lg, marginBottom: spacing.xl },
   lungCopy: { flex: 1, gap: spacing.xs },
   moneyCard: { marginBottom: spacing.lg },
+  buddyCard: { marginBottom: spacing.lg, gap: spacing.sm },
+  buddyRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   taperCard: { marginBottom: spacing.lg, gap: spacing.sm },
   logPuffButton: { marginTop: spacing.sm },
   panic: { marginTop: spacing.xl, marginBottom: spacing.md },

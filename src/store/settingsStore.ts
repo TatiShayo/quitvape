@@ -34,10 +34,17 @@ export interface SettingsState {
   cachedPremium: boolean;
   /** True once the smart review prompt has been shown (fire exactly once). */
   reviewPrompted: boolean;
+  /**
+   * Last buddy streak day count this device observed (see `src/app-core/useBuddy.ts`).
+   * Used only to detect a milestone-crossed/relapse edge on the next foreground refresh
+   * — never treated as this device's own health data.
+   */
+  lastSeenBuddyStreakDays?: number;
 
   setNotificationPref<K extends keyof NotificationPrefs>(key: K, value: NotificationPrefs[K]): void;
   setCachedPremium(value: boolean): void;
   markReviewPrompted(): void;
+  setLastSeenBuddyStreakDays(days: number): void;
   reset(): void;
 }
 
@@ -47,6 +54,7 @@ export const useSettingsStore = create<SettingsState>()(
       notifications: DEFAULT_PREFS,
       cachedPremium: false,
       reviewPrompted: false,
+      lastSeenBuddyStreakDays: undefined,
 
       setNotificationPref(key, value) {
         set((s) => ({ notifications: { ...s.notifications, [key]: value } }));
@@ -57,8 +65,16 @@ export const useSettingsStore = create<SettingsState>()(
       markReviewPrompted() {
         set({ reviewPrompted: true });
       },
+      setLastSeenBuddyStreakDays(days) {
+        set({ lastSeenBuddyStreakDays: days });
+      },
       reset() {
-        set({ notifications: DEFAULT_PREFS, cachedPremium: false, reviewPrompted: false });
+        set({
+          notifications: DEFAULT_PREFS,
+          cachedPremium: false,
+          reviewPrompted: false,
+          lastSeenBuddyStreakDays: undefined,
+        });
       },
     }),
     { name: 'quitvape:settings', storage: asyncStorage, version: 1 },

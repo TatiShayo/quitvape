@@ -31,6 +31,17 @@ is unset (see NEEDS HUMAN in PROJECT_STATE.md).
 | `check_in_submitted` | `app/(app)/home.tsx` | — | Daily mood check-in submitted. Mood value itself is never sent. |
 | `share_card_exported` | `src/app-core/useShareCard.ts` | `card_type` (`achievement`\|`weekly_report`) | Share card captured + system share sheet opened, from `app/achievements.tsx` or `app/weekly-report.tsx`. |
 
+## Community + buddy (Milestone 5)
+
+| Event | Fired from | Properties | Purpose |
+|---|---|---|---|
+| `community_post_created` | `app/(app)/community.tsx` | — | A post was shared. Post body/handle are never sent (both match the `BLOCKED_KEY` scrubber). |
+| `community_post_reported` | `app/(app)/community.tsx` | — | Report button used. |
+| `community_encouragement_sent` | `app/(app)/community.tsx` | — | Preset "tap to send" reaction sent on a post. |
+| `buddy_invite_created` | `app/buddy.tsx` | — | Accountability-buddy invite link generated. |
+| `buddy_invite_accepted` | `app/buddy.tsx` | — | A pasted/deep-linked invite token was accepted, pairing two users. |
+| `coach_message_sent` | `app/(app)/coach.tsx` | — | AI coach message sent through the edge-function proxy. Message text is never sent as a property. |
+
 ## Funnels to build in PostHog (day 1, PLAYBOOK Part 5)
 1. Acquisition -> `quiz_screen_viewed` (screen 0) -> `quiz_completed` -> `paywall_viewed` -> `trial_started`/`purchase_completed` -> retained (D1/D7/D30 on app opens).
 2. Per-screen quiz drop-off: `quiz_screen_viewed` grouped by `screen_index`, breakdown of never reaching `screen_index=10`.

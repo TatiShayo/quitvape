@@ -80,4 +80,10 @@ export const AnalyticsEvent = {
   relapseLogged: 'relapse_logged',
   shareCardExported: 'share_card_exported',
   checkInSubmitted: 'check_in_submitted',
+  communityPostCreated: 'community_post_created',
+  communityPostReported: 'community_post_reported',
+  communityEncouragementSent: 'community_encouragement_sent',
+  buddyInviteCreated: 'buddy_invite_created',
+  buddyInviteAccepted: 'buddy_invite_accepted',
+  coachMessageSent: 'coach_message_sent',
 } as const;
