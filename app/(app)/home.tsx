@@ -7,6 +7,7 @@ import { colors, spacing } from '@/theme';
 import { useQuitStore, useSettingsStore } from '@/store';
 import { useNow } from '@/app-core/useNow';
 import { scheduleAllNotifications } from '@/app-core/notifications';
+import { useReviewPrompt } from '@/app-core/useReviewPrompt';
 import { currentStreakDays, liveDuration, lungStage, milestoneProgress } from '@/domain/streak';
 import { formatMoney, moneySaved } from '@/domain/money';
 import { taperStatus } from '@/domain/taper';
@@ -28,6 +29,11 @@ export default function Home() {
     () => checkIns.find((c) => c.date === localDateKey(now))?.mood,
     [checkIns, now],
   );
+
+  // Smart review prompt: fires exactly once at the 7-day streak (peak happiness),
+  // never after a relapse/craving (0 when there's no plan yet). Mounted only here.
+  const streakDaysForReview = plan ? currentStreakDays(new Date(plan.streakStart), now) : 0;
+  useReviewPrompt(streakDaysForReview);
 
   // Reschedule notifications when the plan's streak start or craving log changes
   // (e.g. after onboarding, a relapse reset, or new danger-hour data) — not on every
