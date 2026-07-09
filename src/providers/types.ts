@@ -3,6 +3,7 @@
  * so the app is identical whether backed by a real SDK or a mock (BUILD_PROMPT: "mocks
  * behind typed provider interfaces for every missing key").
  */
+import { EncouragementPresetId } from '@/content/encouragements';
 
 // ---------------------------------------------------------------------------
 // Purchases / entitlements (RevenueCat)
@@ -96,6 +97,20 @@ export interface CommunityPost {
   streakDays: number;
   createdAt: string;
   reportCount: number;
+  /** Counts per preset encouragement id (BUILD_PROMPT: "tap-to-send preset encouragements"). */
+  encouragements: Partial<Record<EncouragementPresetId, number>>;
+}
+
+export interface BuddyInfo {
+  /** Row id of the pairing (not either user's identity). */
+  id: string;
+  /** True once a second user has accepted the invite. */
+  paired: boolean;
+  /** Deep-link invite token, present while awaiting a pairing. */
+  inviteToken?: string;
+  buddyAnonHandle?: string;
+  buddyStreakDays?: number;
+  pairedAt?: string;
 }
 
 export interface BackendProvider {
@@ -105,6 +120,18 @@ export interface BackendProvider {
   listCommunityPosts(limit?: number): Promise<CommunityPost[]>;
   createCommunityPost(input: { body: string; streakDays: number }): Promise<CommunityPost>;
   reportPost(postId: string): Promise<void>;
+  /** Tap-to-send preset reaction; no free text (moderation-load kill per BUILD_PROMPT). */
+  sendEncouragement(postId: string, presetId: EncouragementPresetId): Promise<void>;
+  /** Accountability buddy (BUILD_PROMPT feature 12). */
+  getBuddy(): Promise<BuddyInfo | null>;
+  createBuddyInvite(): Promise<BuddyInfo>;
+  acceptBuddyInvite(token: string): Promise<BuddyInfo>;
+  /**
+   * Pushes only the current streak day count to the narrow `buddy_streaks` table (the
+   * one deliberate exception to "health data stays local" — readable ONLY by this
+   * user and whoever they are currently paired with; see the migration for the RLS).
+   */
+  syncMyStreak(streakDays: number): Promise<void>;
   /** GDPR / Apple: wipe all of this user's server rows. */
   deleteAllUserData(): Promise<void>;
   isMock: boolean;
