@@ -236,6 +236,10 @@ export function createMockBackend(store: MockBackendStore = createMockBackendSto
       store.streaksByUser.delete(mine);
       userId = undefined;
     },
+    async sendCoachMessage() {
+      // Mock coach: return a generic supportive response
+      return 'I understand you\'re working on quitting. That\'s a big step. Remember, you\'re stronger than you think. What specific challenge are you facing today?';
+    },
     isMock: true,
   };
 }

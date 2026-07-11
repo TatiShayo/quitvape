@@ -4,7 +4,7 @@ const expoConfig = require('eslint-config-expo/flat');
 module.exports = [
   ...expoConfig,
   {
-    ignores: ['dist/*', 'node_modules/*', '.expo/*'],
+    ignores: ['dist/*', 'node_modules/*', '.expo/*', 'supabase/**'],
   },
   {
     // react-hooks/immutability (React Compiler rule) flags `sharedValue.value = ...`

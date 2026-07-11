@@ -136,5 +136,7 @@ export interface BackendProvider {
   syncMyStreak(streakDays: number): Promise<void>;
   /** GDPR / Apple: wipe all of this user's server rows. */
   deleteAllUserData(): Promise<void>;
+  /** AI coach (Anthropic claude-haiku-4-5): send message, get response. Server-side cap: 10 msgs/day, ≤120 words. */
+  sendCoachMessage(message: string): Promise<string>;
   isMock: boolean;
 }

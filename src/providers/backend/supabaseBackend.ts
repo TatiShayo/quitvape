@@ -177,6 +177,17 @@ export function createSupabaseBackend(client: SupabaseClient): BackendProvider {
       await client.auth.signOut();
       userId = undefined;
     },
+    async sendCoachMessage(message) {
+      // Call the coach edge function; it handles auth, rate limiting, and response capping.
+      const { data, error } = await client.functions.invoke('coach', {
+        body: { message },
+      });
+      if (error) throw new Error('Coach is unavailable right now. Try again later.');
+      if (typeof data === 'object' && data !== null && 'response' in data) {
+        return (data as { response: string }).response;
+      }
+      throw new Error('Invalid response from coach.');
+    },
     isMock: false,
   };
 }
