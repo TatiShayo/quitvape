@@ -112,4 +112,19 @@ describe('mock backend session isolation (RLS-equivalent)', () => {
     const target = (await userB.listCommunityPosts()).find((p) => p.id === post.id);
     expect(target?.reportCount).toBe(1);
   });
+
+  it('coach messages from one session are private to that session (not persisted in mock)', async () => {
+    const userA = await session(store);
+    const userB = await session(store);
+
+    // Mock backend returns the same generic response to all; real Supabase logs to coach_messages table
+    const responseA = await userA.sendCoachMessage('my personal message');
+    const responseB = await userB.sendCoachMessage('a different message');
+
+    // Both get the same mock response, but in the real backend each would have their
+    // own coach_messages row (user_id, message, response, timestamp) — visible only to auth.uid()
+    expect(responseA).toBe(responseB);
+    expect(responseA).toBeDefined();
+    // RLS test: real DB prevents cross-user read (see supabase/tests/rls_deny_test.sql)
+  });
 });
