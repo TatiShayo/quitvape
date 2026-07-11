@@ -54,6 +54,7 @@ export function useBuddy() {
   }, [lastSeenBuddyStreakDays, setLastSeenBuddyStreakDays]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- refresh is async; setState happens in callback, not sync
     void refresh();
     // eslint-disable-next-line react-hooks/exhaustive-deps -- refresh only on mount; re-invoked explicitly after invite/accept actions
   }, []);
