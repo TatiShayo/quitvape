@@ -5,7 +5,7 @@
  */
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { asyncStorage } from './persist';
+import { asyncStorage, makeMigrate } from './persist';
 
 export interface NotificationPrefs {
   morningMotivation: boolean;
@@ -77,6 +77,17 @@ export const useSettingsStore = create<SettingsState>()(
         });
       },
     }),
-    { name: 'quitvape:settings', storage: asyncStorage, version: 1 },
+    {
+      name: 'quitvape:settings',
+      storage: asyncStorage,
+      version: 1,
+      // Migration guard (REVIEW_FINDINGS H3): carry fields forward, never drop state.
+      migrate: makeMigrate({
+        notifications: DEFAULT_PREFS,
+        cachedPremium: false,
+        reviewPrompted: false,
+        lastSeenBuddyStreakDays: undefined as number | undefined,
+      }),
+    },
   ),
 );

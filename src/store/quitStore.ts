@@ -14,7 +14,17 @@ import {
   Relapse,
 } from '@/domain/types';
 import { localDateKey } from '@/domain/time';
-import { asyncStorage } from './persist';
+import { asyncStorage, makeMigrate } from './persist';
+
+/** Persisted data shape defaults — used by the migration guard (REVIEW_FINDINGS H3). */
+const PERSISTED_DEFAULTS = {
+  plan: null as QuitPlan | null,
+  relapses: [] as Relapse[],
+  cravings: [] as CravingEvent[],
+  checkIns: [] as CheckIn[],
+  achievementsUnlocked: [] as string[],
+  puffLog: {} as Record<string, number>,
+};
 
 export interface QuitState {
   /** Null until onboarding completes and a plan is committed. */
@@ -141,6 +151,8 @@ export const useQuitStore = create<QuitState>()(
       name: 'quitvape:quit',
       storage: asyncStorage,
       version: 1,
+      // Never drop persisted quit data on a version bump — carry fields forward.
+      migrate: makeMigrate(PERSISTED_DEFAULTS),
     },
   ),
 );
