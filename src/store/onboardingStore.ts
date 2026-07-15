@@ -5,7 +5,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { QuitMethod, QuitReason } from '@/domain/types';
-import { asyncStorage } from './persist';
+import { asyncStorage, makeMigrate } from './persist';
 
 export interface QuizAnswers {
   ageRange?: '18-24' | '25-34' | '35-44' | '45+';
@@ -53,6 +53,17 @@ export const useOnboardingStore = create<OnboardingState>()(
         set({ answers: {}, furthestScreen: 0 });
       },
     }),
-    { name: 'quitvape:onboarding', storage: asyncStorage, version: 1 },
+    {
+      name: 'quitvape:onboarding',
+      storage: asyncStorage,
+      version: 1,
+      // Migration guard (REVIEW_FINDINGS H3): carry in-progress quiz answers forward
+      // on a version bump instead of dropping them and forcing a mid-quiz restart.
+      migrate: makeMigrate({
+        answers: {} as QuizAnswers,
+        furthestScreen: 0,
+        ageConfirmed: false,
+      }),
+    },
   ),
 );
