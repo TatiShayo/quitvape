@@ -42,6 +42,21 @@ burst poster.
 `pg_advisory_xact_lock(hashtext('community_posts_rate:' || user_id))` before
 counting, serializing per-user inserts. **FIXED.**
 
+### H4 — Report auto-hide is a cross-user censorship chain (3 throwaway anon accounts hide any post)
+The feed auto-hides any post at `report_count >= 3` (RLS `community_posts_select_visible`
++ client filter). Anonymous sign-in (`auth.signInAnonymously()`) is unlimited and needs
+no email/identity, so an attacker scripts three fresh anon sessions, calls
+`report_post(target)` from each, and censors ANY post on demand. The 0001 per-reporter PK
+only stops ONE account inflating the count — it does nothing against N sockpuppets. (This
+was previously mis-cleared as "OK" in L5; that assessment was wrong — the PK dedup and
+the sockpuppet-flood are different threats.)
+**Fix:** migration `0003` — `report_post()` now (a) counts only reports from **established**
+accounts (`auth.users.created_at` older than 24h) toward `report_count`, so three
+seconds-old accounts can no longer hide a post, and (b) throttles each reporter to 30
+reports/day against mass-reporting. Raw reports are still recorded (audit); only the
+qualifying subset drives visibility. Regression covered in `supabase/tests/rls_deny_test.sql`.
+**FIXED.**
+
 ### H3 — zustand persisted state (streak!) dropped on any future version bump
 All three stores persist with `version: 1` and **no `migrate`**. zustand discards the
 persisted state when the stored version differs and no migrate is provided — a future
@@ -114,7 +129,9 @@ AsyncStorage — verified in `src/providers/backend/supabaseClient.ts`. **OK.**
 - `community_posts`: no UPDATE/DELETE policies exist → default-deny; posts are
   immutable by others *and* by the author. `report_count` is only writable via the
   `report_post()` RPC, which recounts from `post_reports` (PK dedupes one report per
-  user) — not inflatable by repeat calls. **OK.**
+  user) — not inflatable by *repeat* calls from one account. **BUT** the auto-hide at 3
+  reports was defeatable by three *distinct* throwaway anon accounts — see **H4**, fixed
+  in migration `0003` (established-reporter gate + daily cap). **FIXED (H4).**
 - `craving_events`: insert-own + select-own only; no update/delete. **OK.**
 - `buddies` / `buddy_streaks` / `buddy_encouragements`: pair-private SELECT policies;
   writes only via security-definer RPCs that re-derive identity from `auth.uid()`.
