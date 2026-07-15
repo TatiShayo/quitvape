@@ -1,5 +1,5 @@
-import { useEffect, useMemo } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { useCallback, useEffect, useMemo } from 'react';
+import { AppState, StyleSheet, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Wind } from 'lucide-react-native';
 import { AppText, Button, Card, CheckInPrompt, LungVisual, StreakRing, Screen } from '@/ui';
@@ -41,19 +41,36 @@ export default function Home() {
   // session/backend is available).
   const { buddy } = useBuddy();
 
-  // Reschedule notifications when the plan's streak start or craving log changes
-  // (e.g. after onboarding, a relapse reset, or new danger-hour data) — not on every
-  // per-second tick from useNow.
-  useEffect(() => {
+  const reschedule = useCallback(() => {
     if (!plan) return;
+    const start = new Date(plan.streakStart);
     void scheduleAllNotifications({
       prefs: notificationPrefs,
-      streakStart: new Date(plan.streakStart),
-      streakDays: currentStreakDays(new Date(plan.streakStart), new Date()),
+      streakStart: start,
+      streakDays: currentStreakDays(start, new Date()),
       cravings,
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- reschedule only on plan/cravings change, prefs edited separately in Settings
-  }, [plan?.streakStart, cravings.length]);
+  }, [plan, notificationPrefs, cravings]);
+
+  // Reschedule notifications when the plan's streak start or craving log changes
+  // (e.g. after onboarding, a relapse reset, or new danger-hour data) — not on every
+  // per-second tick from useNow — AND whenever the app returns to the foreground, since
+  // the OS can drop/expire scheduled locals while backgrounded and the danger-hour /
+  // milestone math may have shifted across a day boundary since we last scheduled.
+  useEffect(() => {
+    reschedule();
+    const sub = AppState.addEventListener('change', (s) => {
+      if (s === 'active') reschedule();
+    });
+    return () => sub.remove();
+  }, [reschedule]);
+
+  // Per-day derivations (milestone ladder + lung stage) only change when the calendar-day
+  // count changes, so memoize them off `days` instead of recomputing on every 1s useNow
+  // tick. The live counter (liveDuration/moneySaved below) intentionally stays per-tick.
+  const dayCount = plan ? currentStreakDays(new Date(plan.streakStart), now) : 0;
+  const milestone = useMemo(() => milestoneProgress(dayCount), [dayCount]);
+  const stage = useMemo(() => lungStage(dayCount), [dayCount]);
 
   if (!plan) {
     return (
@@ -65,10 +82,8 @@ export default function Home() {
 
   const start = new Date(plan.streakStart);
   const live = liveDuration(start, now);
-  const days = currentStreakDays(start, now);
-  const milestone = milestoneProgress(days);
+  const days = dayCount;
   const saved = moneySaved(plan.vapeCostPerWeek, live.totalMs);
-  const stage = lungStage(days);
   const taper = plan.method === 'taper' ? taperStatus(plan.baselinePuffsPerDay, start, now, puffsToday(now)) : null;
 
   return (
