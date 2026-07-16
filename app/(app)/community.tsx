@@ -8,6 +8,7 @@ import { ENCOURAGEMENT_PRESETS, EncouragementPresetId } from '@/content/encourag
 import { COMMUNITY_POST_MAX_LENGTH, validateCommunityPost } from '@/domain/profanity';
 import { useQuitStore } from '@/store';
 import { useNow } from '@/app-core/useNow';
+import { loadCommunityFeedCache, saveCommunityFeedCache } from '@/app-core/communityCache';
 import { currentStreakDays } from '@/domain/streak';
 
 const VALIDATION_COPY: Record<string, string> = {
@@ -29,19 +30,40 @@ export default function Community() {
   const streakDays = plan ? currentStreakDays(new Date(plan.streakStart), now) : 0;
 
   const [posts, setPosts] = useState<CommunityPost[] | null>(null);
+  const [offline, setOffline] = useState(false);
   const [draft, setDraft] = useState('');
   const [posting, setPosting] = useState(false);
   const [sentEncouragements, setSentEncouragements] = useState<Set<string>>(new Set());
 
+  // Offline-first feed: a live fetch replaces the cached snapshot on success and
+  // repopulates the cache; on failure we keep showing whatever we last had (cache or
+  // previous fetch) with an offline notice instead of blanking the screen.
   const refresh = useCallback(() => {
-    void getBackend().listCommunityPosts().then(setPosts).catch(() => setPosts([]));
+    void getBackend()
+      .listCommunityPosts()
+      .then((fresh) => {
+        setPosts(fresh);
+        setOffline(false);
+        void saveCommunityFeedCache(fresh);
+      })
+      .catch(() => {
+        setOffline(true);
+        setPosts((prev) => prev ?? []);
+      });
   }, []);
 
   useEffect(() => {
+    // Paint the last-known feed immediately (only if nothing fresher has landed).
+    void loadCommunityFeedCache().then((cached) => {
+      if (cached) setPosts((prev) => prev ?? cached);
+    });
     void getBackend()
       .ensureAnonSession()
       .then(refresh)
-      .catch(() => setPosts([]));
+      .catch(() => {
+        setOffline(true);
+        setPosts((prev) => prev ?? []);
+      });
   }, [refresh]);
 
   const validation = useMemo(() => validateCommunityPost(draft), [draft]);
@@ -115,6 +137,12 @@ export default function Community() {
           Community
         </AppText>
         <AppText variant="title">You&apos;re not quitting alone</AppText>
+        {offline ? (
+          <AppText variant="caption" color="textTertiary">
+            Offline — showing the last saved feed. New posts will load once you&apos;re
+            back online.
+          </AppText>
+        ) : null}
       </View>
 
       <Card style={styles.composer}>
@@ -146,7 +174,11 @@ export default function Community() {
         contentContainerStyle={styles.list}
         ListEmptyComponent={
           <AppText variant="body" color="textTertiary" center style={styles.empty}>
-            {posts === null ? 'Loading…' : 'Be the first to share a win today.'}
+            {posts === null
+              ? 'Loading…'
+              : offline
+                ? 'No saved posts yet — reconnect to see the feed.'
+                : 'Be the first to share a win today.'}
           </AppText>
         }
         renderItem={({ item }) => (
