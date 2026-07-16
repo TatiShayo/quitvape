@@ -44,28 +44,35 @@ export function Slider({ min, max, step = 1, value, onChange, formatValue }: Sli
     thumbX.value = progress * Math.max(1, w - THUMB_SIZE);
   }
 
+  // Tracks the last step value committed to JS so the worklet only crosses the
+  // bridge when the *stepped* value actually changes (perf: previously runOnJS fired
+  // on every gesture frame — 60-120 calls/s each triggering the JS closure, a store
+  // write and a re-render; now it's one call per detent).
+  const lastStepped = useSharedValue(clamped);
+
   const commit = useCallback(
-    (x: number) => {
-      const p = Math.min(1, Math.max(0, x / usableWidth));
-      const raw = min + p * (max - min);
-      const stepped = Math.round(raw / step) * step;
-      const next = Math.min(max, Math.max(min, stepped));
-      if (next !== value) {
-        onChange(next);
-        void Haptics.selectionAsync();
-      }
+    (next: number) => {
+      onChange(next);
+      void Haptics.selectionAsync();
     },
-    [max, min, onChange, step, usableWidth, value],
+    [onChange],
   );
 
   const pan = Gesture.Pan()
     .onStart(() => {
       startX.value = thumbX.value;
+      lastStepped.value = clamped;
     })
     .onUpdate((e) => {
       const next = Math.min(usableWidth, Math.max(0, startX.value + e.translationX));
       thumbX.value = next;
-      runOnJS(commit)(next);
+      const p = Math.min(1, Math.max(0, next / usableWidth));
+      const raw = min + p * (max - min);
+      const stepped = Math.min(max, Math.max(min, Math.round(raw / step) * step));
+      if (stepped !== lastStepped.value) {
+        lastStepped.value = stepped;
+        runOnJS(commit)(stepped);
+      }
     })
     .onEnd(() => {
       thumbX.value = withSpring(thumbX.value, spring.gentle);
