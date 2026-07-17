@@ -140,3 +140,47 @@ AsyncStorage — verified in `src/providers/backend/supabaseClient.ts`. **OK.**
   `search_path = public`. **OK.**
 - Remaining gap: the automated deny-test still requires a live Supabase project
   (NEEDS HUMAN, tracked in PROJECT_STATE.md).
+
+## PERFORMANCE / RELIABILITY
+
+### P1 — Notifications never rescheduled on foreground
+Scheduled locals were only re-derived when plan/craving data changed. The OS can
+drop or expire scheduled notifications while the app is backgrounded, and the
+danger-hour/milestone math shifts across day boundaries — a user returning after
+days could silently have no notifications at all.
+**Fix:** `app/(app)/home.tsx` registers an `AppState` listener and calls the
+idempotent `scheduleAllNotifications` on every return to `active` (stable-id
+cancel-first scheduling makes repeat calls safe). **FIXED.**
+
+### P2 — Per-day streak derivations recomputed on every 1-second tick
+`milestoneProgress` and `lungStage` were recalculated 60×/minute from the
+`useNow(1000)` tick, though they only change when the calendar-day count changes.
+**Fix:** memoized on `dayCount` (`useMemo`) in home.tsx; the live d:h:m:s counter
+and money odometer intentionally stay per-tick. **FIXED.**
+
+### P3 — Slider worklet crossed the JS bridge on every gesture frame
+`runOnJS` fired per `onUpdate` frame (60–120 calls/s), each triggering the JS
+closure, a store write, and a re-render — visible jank on the puffs/day and
+weekly-spend quiz sliders.
+**Fix:** a `lastStepped` shared value gates the bridge call so JS is invoked once
+per detent (stepped-value change), not per frame. Audit of all other worklets
+(`panic.tsx`, `Button`, `QuizProgress`) confirms they capture only shared values,
+never store objects/state — no whole-store capture anywhere. **FIXED.**
+
+### P4 — Community feed blanked to "Loading…" with no connection
+The feed had no offline story: open with no network → empty screen.
+**Fix:** `src/app-core/communityCache.ts` snapshots the last 50 public posts to
+AsyncStorage; `community.tsx` paints the snapshot instantly, shows an offline
+notice on fetch failure instead of blanking, and refreshes the cache on every
+successful fetch. Privacy: the cache holds only what the public feed already
+shows everyone (anon handles/bodies/streak badges) — none of the local user's
+quit/relapse/craving data. **FIXED.**
+
+### P5 — Timezone-change streak display
+Verified correct by construction: streak days use LOCAL calendar-day math
+(`calendarDaysBetween`/`startOfLocalDay`) re-derived from the device's current
+timezone on every render, `useNow` refreshes immediately when the app
+foregrounds (so a post-flight timezone jump shows the right day count on
+resume), and per-day memoization keys off the derived day count so it can never
+pin a stale value across a tz change. Timezone/DST edges are unit-tested in
+`src/domain/__tests__/streak.test.ts`. **VERIFIED (no change needed).**
