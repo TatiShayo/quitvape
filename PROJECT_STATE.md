@@ -3,7 +3,15 @@
 > Single source of truth for build continuity. Update after every milestone.
 > A fresh session with zero memory must be able to resume from this file alone.
 
-## Status: MILESTONE 2 COMPLETE (onboarding quiz + paywall) — resumed 2026-07-07
+## Status: BUILD COMPLETE + SECURITY/PERF AUDIT COMPLETE — 2026-07-17
+
+All milestones (1–5) built; release-prep docs written; full security & reliability
+audit finished. Findings ledger: `AUDIT_LOG.md` (found/fixed/deferred + the proven
+H4 report-abuse exploit chain), detail in `REVIEW_FINDINGS.md` (C1–C2, H1–H4,
+M1–M3, L1–L5, P1–P5 — all fixed or explicitly accepted/deferred). System map:
+`ARCHITECTURE.md`. Portfolio README updated. Remaining work is exclusively
+NEEDS-HUMAN (keys, live Supabase deploy + deny-test run, device/simulator QA,
+store setup) — see the section at the bottom.
 
 ## Tech stack (fixed, per BUILD_PROMPT)
 Expo SDK 57 + TypeScript + expo-router + zustand (AsyncStorage persist) + Reanimated 4
@@ -28,7 +36,22 @@ Function proxy to Anthropic `claude-haiku-4-5` (key server-side only).
   per-screen analytics. Quiz copy/options live in `src/content/quiz.ts`.
 - Every PostHog event must be added to `analytics.md` in the same change (PLAYBOOK 6).
 
-## Done (this session)
+## Done (audit sessions, 2026-07-12 → 2026-07-17)
+- Security fixes (all committed; see AUDIT_LOG.md): coach edge fn JWT verification +
+  atomic 10/day quota + kill-switch-first + prompt-injection delimiting + reply caps
+  (C1/C2/H1/M3, migration 0002); racy 5-posts/day trigger made advisory-locked (H2);
+  craving_events timestamps day-truncated (M1); buddy invite dedup + pair-exclusivity
+  (M2); zustand persist `migrate` on all three stores so version bumps never wipe the
+  streak (H3); H4 sockpuppet report-abuse chain proven and fixed (migration 0003:
+  established-reporter gate + 30 reports/day cap + deny-test regression).
+- Perf/reliability (P1–P5): notification reschedule on every foreground; per-day streak
+  derivations memoized off the 1s tick; Slider worklet bridges once per detent (worklet
+  audit: no store capture anywhere); community feed offline cache; timezone-change
+  streak display verified correct by construction.
+- Docs: ARCHITECTURE.md (new), AUDIT_LOG.md (new), REVIEW_FINDINGS.md completed with
+  perf section, portfolio README highlights section.
+
+## Done (earlier build session)
 - Rewrote PROJECT_STATE.md to reflect true on-disk state (Milestone 1 was already
   substantially built from a prior session: theme, providers+mocks, zustand stores, UI
   primitives, domain math, app shell/gate, panic button, tab shell, paywall).
@@ -64,6 +87,11 @@ Function proxy to Anthropic `claude-haiku-4-5` (key server-side only).
   fresh install using mock providers.
 
 ## Next
+- All remaining work is NEEDS-HUMAN (keys/accounts, live Supabase deploy + running
+  `supabase/tests/rls_deny_test.sql` against a real project, device/simulator QA,
+  store setup) — see "NEEDS HUMAN" below. No open code tasks.
+
+## Historical build notes (superseded — kept for context)
 - Milestone 3: core loop — home/streak screen is a placeholder-quality MVP already
   (needs the lung-visual SVG staged states day 1/3/7/14/30/90, liquid-smooth streak
   ring with milestone glow); panic button breathing sequence exists and is functional
@@ -170,10 +198,9 @@ Function proxy to Anthropic `claude-haiku-4-5` (key server-side only).
   in staging to confirm old rows are deleted (NEEDS-HUMAN: Milestone 5 + staging env).
 
 ## Verification gate (no simulators on this Windows machine)
-`npx tsc --noEmit` (pass) + `npx eslint .` (pass) + `npx jest` (62 tests pass) confirmed.
-`npx expo export` did not produce bundled output to disk (Metro bundler started but did
-not complete, likely due to timeout on this machine). Tsc/eslint/jest gates confirm the
-codebase type-checks and the full quiz-paywall-home flow is statically walkable.
+As of audit close (2026-07-17): `npx tsc --noEmit` (pass) + `npx eslint .` (pass) +
+`npx jest` (15 suites / 128 tests pass) + `npx expo export` (bundles; result recorded
+below). Exported bundle grepped for `ANTHROPIC_API_KEY` — must be absent.
 
 Environment note: this Windows/bash-tool combination can leave stray background `node`
 processes running across turns, which visibly slows later `tsc`/`jest` runs (single-digit

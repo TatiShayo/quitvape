@@ -1,8 +1,41 @@
 # QuitVape — Quit Vaping Companion App
 
-An evidence-based, privacy-first app to help you quit vaping using proven strategies (cold turkey, taper, CBT, breathing exercises) plus community support and an AI coach.
+An evidence-based, privacy-first mobile app that helps people quit vaping: cold-turkey
+or gradual-taper plans, a 4-7-8 breathing panic button, live streak + money-saved
+counters, a lung-recovery health timeline, an anonymous peer community, an
+accountability buddy system, and an AI coach — all wrapped in a "midnight premium
+wellness" design system.
 
-**Status:** Milestone 3 in development (Expo SDK 57, TypeScript, React Native, Zustand, Supabase).
+**Stack:** Expo SDK 57 · TypeScript (strict) · expo-router · zustand · Reanimated 4 ·
+react-native-svg · Supabase (anon auth, RLS, Edge Functions) · RevenueCat · PostHog ·
+Sentry · Anthropic `claude-haiku-4-5` (server-side proxy only).
+
+## Highlights
+
+- **Privacy as an invariant, not a feature.** Quit/relapse/craving history never leaves
+  the device: a runtime analytics scrubber drops health-adjacent property keys, Sentry
+  strips request bodies, server-synced craving analytics are day-truncated and
+  non-joinable to identity, and the whole community runs on anonymous auth (no email,
+  name, or contact info exists anywhere in the system).
+- **Security-hardened backend.** Postgres RLS on every table (community posts immutable,
+  craving events insert/select-own only, buddy data pair-private), advisory-lock
+  rate limits (no TOCTOU races), a report-abuse defense that defeats sockpuppet
+  mass-reporting, and an AI-coach edge function with kill-switch-first ordering, real
+  JWT verification, an atomic 10-messages/day quota, prompt-injection delimiting, and
+  server-capped replies. Full ledger in `AUDIT_LOG.md` / `REVIEW_FINDINGS.md`.
+- **Correct time math.** Streak days are local-calendar-day based (DST- and
+  timezone-change-safe, unit-tested), while live counters use elapsed time — the
+  distinction that makes "Day 1 at your local midnight" work.
+- **Resilient by design.** Versioned store persistence with explicit migrations (a
+  schema bump can never wipe a streak), idempotent notification scheduling re-run on
+  every foreground, an offline-first community feed, and mock providers for every
+  third-party service so the app runs end-to-end on a fresh clone with zero keys.
+- **Hand-built UI primitives.** Custom slider, animated dependency gauge, odometer
+  counters, SVG streak ring and staged lung visual — no default-look controls; worklets
+  audited to keep gesture frames off the JS thread.
+- **Tested gate.** 128 unit tests (streak/DST edges, taper, money, persistence
+  migrations, backend isolation, coach privacy) + tsc/eslint/jest/expo-export required
+  green before every commit. See `ARCHITECTURE.md` for the full system map.
 
 ## Development
 
