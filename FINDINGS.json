@@ -3,7 +3,7 @@
   "run_id": "hermes-2026-07-27-v6-quitvape",
   "project": "quitvape",
   "phase": "4.0",
-  "produced_at": "2026-07-27T22:42:17.798155",
+  "produced_at": "2026-07-27T23:38:01.108745",
   "runner_tier": "T1",
   "mode": "static-only",
   "findings": [
