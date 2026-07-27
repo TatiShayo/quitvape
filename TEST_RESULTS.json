@@ -1,9 +1,21 @@
 {
-  "schema": "hermes.tests.v4",
-  "run_id": "hermes-2026-07-25-quitvape",
-  "status": "pass",
-  "counts": {
-    "passed": 10,
-    "failed": 0
-  }
+  "schema": "hermes.tests.v6",
+  "run_id": "hermes-2026-07-27-v6-quitvape",
+  "project": "quitvape",
+  "produced_at": "2026-07-27T22:13:17.632396",
+  "summary": {
+    "status": "UNRUNNABLE_NO_SCRIPT",
+    "passed": 1,
+    "failed": 0,
+    "skipped": 0,
+    "unrunnable": 1
+  },
+  "suites": [
+    {
+      "suite": "TypeScript Compilation",
+      "tool": "npx tsc --noEmit",
+      "status": "PASS",
+      "exit_code": 0
+    }
+  ]
 }
