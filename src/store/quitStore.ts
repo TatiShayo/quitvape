@@ -16,7 +16,7 @@ import {
 import { localDateKey } from '@/domain/time';
 import { asyncStorage, makeMigrate } from './persist';
 
-/** Persisted data shape defaults — used by the migration guard (REVIEW_FINDINGS H3). */
+/** Persisted data shape defaults — used by the migration guard. */
 const PERSISTED_DEFAULTS = {
   plan: null as QuitPlan | null,
   relapses: [] as Relapse[],
@@ -43,7 +43,7 @@ export interface QuitState {
   // --- relapse (streak resets, lifetime keeps counting) ---
   logRelapse(trigger: CravingTrigger, at?: Date): void;
 
-  // --- cravings ---
+  // --- cravings (supports 1-5 and 1-10 intensity) ---
   logCraving(input: { intensity: number; trigger: CravingTrigger; resisted: boolean }, at?: Date): void;
 
   // --- check-ins (one per local day; latest wins) ---
@@ -59,6 +59,16 @@ export interface QuitState {
   // --- edits from settings ---
   updateSpend(vapeCostPerWeek: number): void;
   updateQuitDate(iso: string): void;
+
+  // --- import/restore ---
+  importData(data: {
+    plan: QuitPlan | null;
+    relapses: Relapse[];
+    cravings: CravingEvent[];
+    checkIns: CheckIn[];
+    achievementsUnlocked: string[];
+    puffLog: Record<string, number>;
+  }): void;
 }
 
 export const useQuitStore = create<QuitState>()(
@@ -96,7 +106,8 @@ export const useQuitStore = create<QuitState>()(
       logRelapse(trigger, at = new Date()) {
         const { plan, relapses } = get();
         if (!plan) return;
-        const ts = at.toISOString();
+        const validAt = at instanceof Date && !Number.isNaN(at.getTime()) ? at : new Date();
+        const ts = validAt.toISOString();
         set({
           relapses: [...relapses, { ts, trigger }],
           // Streak resets: the new streak starts at the relapse instant.
@@ -105,32 +116,39 @@ export const useQuitStore = create<QuitState>()(
       },
 
       logCraving(input, at = new Date()) {
-        const intensity = Math.min(5, Math.max(1, Math.round(input.intensity)));
+        const rawIntensity = Number.isFinite(input.intensity) ? input.intensity : 3;
+        const intensity = Math.min(10, Math.max(1, Math.round(rawIntensity)));
+        const validAt = at instanceof Date && !Number.isNaN(at.getTime()) ? at : new Date();
         set((s) => ({
           cravings: [
             ...s.cravings,
-            { ts: at.toISOString(), intensity, trigger: input.trigger, resisted: input.resisted },
+            { ts: validAt.toISOString(), intensity, trigger: input.trigger, resisted: input.resisted },
           ],
         }));
       },
 
       submitCheckIn(mood, at = new Date()) {
-        const date = localDateKey(at);
+        const validAt = at instanceof Date && !Number.isNaN(at.getTime()) ? at : new Date();
+        const date = localDateKey(validAt);
+        const clampedMood = Math.min(5, Math.max(1, Math.round(mood))) as MoodValue;
         set((s) => ({
-          checkIns: [...s.checkIns.filter((c) => c.date !== date), { date, mood }],
+          checkIns: [...s.checkIns.filter((c) => c.date !== date), { date, mood: clampedMood }],
         }));
       },
 
       logPuff(at = new Date()) {
-        const key = localDateKey(at);
+        const validAt = at instanceof Date && !Number.isNaN(at.getTime()) ? at : new Date();
+        const key = localDateKey(validAt);
         set((s) => ({ puffLog: { ...s.puffLog, [key]: (s.puffLog[key] ?? 0) + 1 } }));
       },
 
       puffsToday(at = new Date()) {
-        return get().puffLog[localDateKey(at)] ?? 0;
+        const validAt = at instanceof Date && !Number.isNaN(at.getTime()) ? at : new Date();
+        return get().puffLog[localDateKey(validAt)] ?? 0;
       },
 
       unlockAchievement(id) {
+        if (!id || typeof id !== 'string') return;
         set((s) =>
           s.achievementsUnlocked.includes(id)
             ? s
@@ -139,12 +157,25 @@ export const useQuitStore = create<QuitState>()(
       },
 
       updateSpend(vapeCostPerWeek) {
+        if (!Number.isFinite(vapeCostPerWeek)) return;
         const v = Math.max(0, vapeCostPerWeek);
         set((s) => (s.plan ? { plan: { ...s.plan, vapeCostPerWeek: v } } : s));
       },
 
       updateQuitDate(iso) {
+        if (typeof iso !== 'string' || Number.isNaN(new Date(iso).getTime())) return;
         set((s) => (s.plan ? { plan: { ...s.plan, streakStart: iso } } : s));
+      },
+
+      importData(data) {
+        set({
+          plan: data.plan,
+          relapses: data.relapses ?? [],
+          cravings: data.cravings ?? [],
+          checkIns: data.checkIns ?? [],
+          achievementsUnlocked: data.achievementsUnlocked ?? [],
+          puffLog: data.puffLog ?? {},
+        });
       },
     }),
     {

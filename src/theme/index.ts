@@ -11,6 +11,8 @@ export type { TypographyToken } from './typography';
 export { spacing, radii, shadow, HIT_TARGET } from './layout';
 export { duration, spring, PRESS_SCALE } from './motion';
 export { fontMap } from './fonts';
+export { skyAt, skyProgress, mixHex, PANIC_SKY } from './sky';
+export type { SkyStops } from './sky';
 
 export const theme = {
   colors,

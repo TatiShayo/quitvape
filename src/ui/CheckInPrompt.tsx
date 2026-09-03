@@ -28,9 +28,14 @@ interface CheckInPromptProps {
 export function CheckInPrompt({ todaysMood, onSubmit }: CheckInPromptProps) {
   return (
     <Card style={styles.card}>
-      <AppText variant="bodyStrong">
-        {todaysMood ? "Today's check-in" : 'How are you feeling today?'}
-      </AppText>
+      <View style={styles.head}>
+        <AppText variant="overline" color="textTertiary">
+          {todaysMood ? 'Checked in' : 'Daily check-in'}
+        </AppText>
+        <AppText variant="bodyStrong">
+          {todaysMood ? 'Logged for today' : 'How are you doing?'}
+        </AppText>
+      </View>
       <View style={styles.row}>
         {MOOD_OPTIONS.map(({ value, Icon, label }) => {
           const selected = todaysMood === value;
@@ -40,14 +45,24 @@ export function CheckInPrompt({ todaysMood, onSubmit }: CheckInPromptProps) {
               accessibilityRole="button"
               accessibilityLabel={label}
               accessibilityState={{ selected }}
-              hitSlop={6}
+              hitSlop={4}
               onPress={() => {
                 void Haptics.selectionAsync();
                 onSubmit(value);
               }}
-              style={[styles.moodButton, selected && styles.moodButtonSelected]}
+              style={styles.moodCol}
             >
-              <Icon color={selected ? colors.accent : colors.textTertiary} size={26} />
+              <View style={[styles.moodButton, selected && styles.moodButtonSelected]}>
+                <Icon color={selected ? colors.accent : colors.textTertiary} size={24} />
+              </View>
+              {/* Labels are shown, not hidden behind the icon. A five-point face scale is
+                  read inconsistently without them — "Meh" vs "Frown" is a coin flip, and
+                  inconsistent self-report makes the resulting mood trend worthless. Note
+                  the icons are all one neutral colour: a red-to-green mood scale tells
+                  the user which answers are the good ones and biases what they log. */}
+              <AppText variant="caption" color={selected ? 'textPrimary' : 'textTertiary'} center>
+                {label}
+              </AppText>
             </Pressable>
           );
         })}
@@ -57,14 +72,21 @@ export function CheckInPrompt({ todaysMood, onSubmit }: CheckInPromptProps) {
 }
 
 const styles = StyleSheet.create({
-  card: { gap: spacing.md },
+  card: { gap: spacing.lg },
+  head: { gap: spacing.xs },
   row: { flexDirection: 'row', justifyContent: 'space-between' },
+  moodCol: { alignItems: 'center', gap: spacing.xs, flex: 1 },
   moodButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 46,
+    height: 46,
+    borderRadius: 23,
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'transparent',
   },
-  moodButtonSelected: { backgroundColor: colors.surfaceElevated },
+  moodButtonSelected: {
+    backgroundColor: colors.surfaceElevated,
+    borderColor: colors.accentDim,
+  },
 });

@@ -49,6 +49,11 @@ describe('liveDuration', () => {
     const now = new Date(2026, 0, 5);
     expect(liveDuration(start, now)).toEqual({ days: 0, hours: 0, minutes: 0, seconds: 0, totalMs: 0 });
   });
+
+  it('handles exact zero elapsed time', () => {
+    const start = new Date(2026, 0, 1, 12, 0, 0);
+    expect(liveDuration(start, start)).toEqual({ days: 0, hours: 0, minutes: 0, seconds: 0, totalMs: 0 });
+  });
 });
 
 describe('lifetimeVapeFreeDays', () => {

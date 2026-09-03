@@ -5,15 +5,14 @@ import * as Haptics from 'expo-haptics';
 import Animated, {
   Easing,
   cancelAnimation,
-  interpolateColor,
   useAnimatedStyle,
   useSharedValue,
   withTiming,
   runOnJS,
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { AppText, Button, WhyIQuitReveal } from '@/ui';
-import { colors, spacing } from '@/theme';
+import { AppText, Button, Sky, WhyIQuitReveal } from '@/ui';
+import { colors, PANIC_SKY, spacing } from '@/theme';
 import { useQuitStore } from '@/store';
 import { useNow } from '@/app-core/useNow';
 import { useHotline } from '@/app-core/useHotline';
@@ -22,27 +21,45 @@ import { formatMoney, moneySaved } from '@/domain/money';
 import { liveDuration } from '@/domain/streak';
 import { QUIT_REASON_OPTIONS } from '@/content/quiz';
 
+/**
+ * PANIC MODE — the screen that has to work when nothing else does.
+ *
+ * DESIGN CONSTRAINTS, ALL BEHAVIOURAL:
+ *
+ * 1. NO ALARM COLOUR. The instinct is to make an emergency screen red. That is exactly
+ *    backwards. A craving is already a sympathetic-arousal spike; long-wavelength,
+ *    high-saturation colour raises arousal further (Valdez & Mehrabian). This screen
+ *    steps *away* from the user's warm earned sky into a cool, desaturated field —
+ *    the palette does the opposite of what the body is doing.
+ *
+ * 2. THE WAVE IS NAMED AND TIMED. Cravings peak and subside in roughly 3-5 minutes,
+ *    but subjectively feel unbounded. Urge-surfing (Marlatt's relapse-prevention work)
+ *    depends on the user believing the thing is finite. The 4-7-8 cycle is a container
+ *    with a visible end, and the copy says outright that it passes.
+ *
+ * 3. BREATHING FIRST, REASONS SECOND. The 4-7-8 pattern lengthens exhale relative to
+ *    inhale, which raises vagal tone and drops heart rate — a physiological intervention
+ *    that works whether or not the user is convinced by it. Only once arousal has come
+ *    down are their own stated reasons surfaced, because reason-giving requires the
+ *    prefrontal capacity that the first sixty seconds are spent restoring.
+ *
+ * 4. "I SLIPPED" IS NOT PUNISHED. It is styled in the care tone, same weight as the
+ *    other exit. A slip route that looks like a failure button gets avoided, and an
+ *    unlogged slip is one the plan cannot adapt to.
+ */
+
 type Phase = 'inhale' | 'hold' | 'exhale';
 
-// 4-7-8 rhythm (ms). The signature breathing interaction.
-const PHASES: { phase: Phase; label: string; ms: number }[] = [
-  { phase: 'inhale', label: 'Breathe in', ms: 4000 },
-  { phase: 'hold', label: 'Hold', ms: 7000 },
-  { phase: 'exhale', label: 'Breathe out', ms: 8000 },
+// 4-7-8 rhythm (ms). Extended exhale is the active ingredient, not the inhale.
+const PHASES: { phase: Phase; label: string; hint: string; ms: number }[] = [
+  { phase: 'inhale', label: 'Breathe in', hint: 'through your nose', ms: 4000 },
+  { phase: 'hold', label: 'Hold', hint: 'stay with it', ms: 7000 },
+  { phase: 'exhale', label: 'Breathe out', hint: 'slowly, through your mouth', ms: 8000 },
 ];
 
-// One full 4-7-8 cycle before revealing the user's "why I quit" words + actions
-// (BUILD_PROMPT signature interaction: breathing first, then their reasons fade in).
+// Two full cycles (~38s) before revealing their "why". Long enough for the arousal
+// curve to turn, short enough that it never feels like being held hostage.
 const CYCLES_BEFORE_REVEAL = 2;
-
-// Background "temperature" per phase (BUILD_PROMPT: "background gradient temperature
-// shifting with each phase"). 0 = cool/deep (inhale — drawing in), 1 = warm (exhale —
-// release). Hold sits at the midpoint. Interpolated continuously so the shift itself
-// breathes rather than cutting between phases.
-const TEMPERATURE_BY_PHASE: Record<Phase, number> = { inhale: 0, hold: 0.5, exhale: 1 };
-const BG_COOL = '#0B1220';
-const BG_MID = '#141225';
-const BG_WARM = '#1F1420';
 
 export default function Panic() {
   const router = useRouter();
@@ -55,14 +72,14 @@ export default function Panic() {
   const [phaseIndex, setPhaseIndex] = useState(0);
   const [cycle, setCycle] = useState(0);
   const [revealed, setRevealed] = useState(false);
-  const scale = useSharedValue(0.6);
-  const temperature = useSharedValue(TEMPERATURE_BY_PHASE.inhale);
+  const scale = useSharedValue(0.62);
+  const halo = useSharedValue(0.3);
 
   useEffect(() => {
     getAnalytics().capture(AnalyticsEvent.panicButtonOpened);
     return () => {
       cancelAnimation(scale);
-      cancelAnimation(temperature);
+      cancelAnimation(halo);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- fire once on mount only
   }, []);
@@ -70,10 +87,12 @@ export default function Panic() {
   useEffect(() => {
     if (revealed) return;
     const { phase, ms } = PHASES[phaseIndex];
+    // Haptic marks each phase change so the rhythm can be followed with eyes closed —
+    // which is what people actually do, and what we want them to do.
     void Haptics.impactAsync(
       phase === 'exhale' ? Haptics.ImpactFeedbackStyle.Light : Haptics.ImpactFeedbackStyle.Medium,
     );
-    const target = phase === 'inhale' ? 1 : phase === 'exhale' ? 0.6 : scale.value;
+    const target = phase === 'inhale' ? 1 : phase === 'exhale' ? 0.62 : scale.value;
     scale.value = withTiming(
       target,
       { duration: ms, easing: Easing.inOut(Easing.ease) },
@@ -91,15 +110,16 @@ export default function Panic() {
         runOnJS(setPhaseIndex)(nextIndex);
       },
     );
-    temperature.value = withTiming(TEMPERATURE_BY_PHASE[phase], {
+    halo.value = withTiming(phase === 'inhale' ? 0.85 : phase === 'exhale' ? 0.25 : 0.55, {
       duration: ms,
       easing: Easing.inOut(Easing.ease),
     });
-  }, [phaseIndex, cycle, revealed, scale, temperature]);
+  }, [phaseIndex, cycle, revealed, scale, halo]);
 
   const orbStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
-  const backgroundStyle = useAnimatedStyle(() => ({
-    backgroundColor: interpolateColor(temperature.value, [0, 0.5, 1], [BG_COOL, BG_MID, BG_WARM]),
+  const haloStyle = useAnimatedStyle(() => ({
+    opacity: halo.value * 0.5,
+    transform: [{ scale: 1 + halo.value * 0.35 }],
   }));
 
   const saved = plan
@@ -120,93 +140,130 @@ export default function Panic() {
     router.replace('/relapse');
   }
 
+  const current = PHASES[phaseIndex];
+  const cycleLabel = `Round ${cycle + 1} of ${CYCLES_BEFORE_REVEAL}`;
+
   return (
-    <Animated.View
-      style={[
-        styles.container,
-        backgroundStyle,
-        { paddingTop: insets.top, paddingBottom: insets.bottom },
-      ]}
-    >
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel="Close panic mode"
-        onPress={() => router.back()}
-        style={styles.close}
-        hitSlop={12}
+    <View style={styles.container}>
+      {/* Cool, starless field — deliberately not the user's earned sky. */}
+      <Sky stops={PANIC_SKY} starless />
+
+      <View
+        style={[
+          styles.content,
+          { paddingTop: insets.top + spacing.sm, paddingBottom: insets.bottom + spacing.lg },
+        ]}
       >
-        <AppText variant="body" color="textTertiary">
-          Close
-        </AppText>
-      </Pressable>
-
-      {!revealed ? (
-        <View style={styles.orbWrap}>
-          <Animated.View style={[styles.orb, orbStyle]} />
-          <AppText variant="displayM" center style={styles.phaseLabel}>
-            {PHASES[phaseIndex].label}
+        <View style={styles.topBar}>
+          <AppText variant="overline" color="textTertiary">
+            {revealed ? 'Why you started' : cycleLabel}
           </AppText>
-        </View>
-      ) : (
-        <View style={styles.orbWrap}>
-          <WhyIQuitReveal labels={whyLabels.length > 0 ? whyLabels : ['This craving will pass.']} />
-        </View>
-      )}
-
-      {revealed ? (
-        <>
-          <View style={styles.why}>
-            <AppText variant="caption" color="textTertiary" center>
-              You&apos;ve saved
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Close panic mode"
+            onPress={() => router.back()}
+            hitSlop={16}
+            style={styles.close}
+          >
+            <AppText variant="label" color="textSecondary">
+              Close
             </AppText>
-            <AppText variant="displayM" color="money" tabular center>
-              ${formatMoney(saved)}
-            </AppText>
-          </View>
+          </Pressable>
+        </View>
 
-          <View style={styles.actions}>
-            <Button label="Craving passed" onPress={onResisted} haptic />
-            <Button label="I slipped" onPress={onSlipped} variant="ghost" />
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={`Call ${hotline.name} at ${hotline.phone}`}
-              onPress={() => void Linking.openURL(hotline.tel)}
-              hitSlop={8}
-              style={styles.hotlineLink}
-            >
-              <AppText variant="caption" color="textTertiary" center>
-                Need to talk to someone right now? Call {hotline.phone}
+        {!revealed ? (
+          <>
+            <View style={styles.orbWrap}>
+              <Animated.View style={[styles.halo, haloStyle]} />
+              <Animated.View style={[styles.orb, orbStyle]} />
+              <View style={styles.phaseText}>
+                <AppText variant="displayM" center>
+                  {current.label}
+                </AppText>
+                <AppText variant="caption" color="textSecondary" center style={styles.hint}>
+                  {current.hint}
+                </AppText>
+              </View>
+            </View>
+
+            {/* The single most important sentence on this screen. */}
+            <AppText variant="bodyL" color="textSecondary" center style={styles.reassure}>
+              This wave peaks in about three minutes, then it goes.{'\n'}You do not have to
+              do anything but breathe.
+            </AppText>
+          </>
+        ) : (
+          <>
+            <View style={styles.orbWrap}>
+              <WhyIQuitReveal
+                labels={whyLabels.length > 0 ? whyLabels : ['This craving will pass.']}
+              />
+            </View>
+
+            <View style={styles.savedBlock}>
+              <AppText variant="overline" color="textTertiary" center>
+                Still yours
               </AppText>
-            </Pressable>
-          </View>
-        </>
-      ) : null}
-    </Animated.View>
+              <AppText variant="displayL" color="money" tabular center>
+                ${formatMoney(saved)}
+              </AppText>
+            </View>
+
+            <View style={styles.actions}>
+              <Button label="It passed" onPress={onResisted} haptic />
+              <Button label="I slipped — that's okay" onPress={onSlipped} variant="care" />
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={`Call ${hotline.name} at ${hotline.phone}`}
+                onPress={() => void Linking.openURL(hotline.tel)}
+                hitSlop={12}
+                style={styles.hotlineLink}
+              >
+                <AppText variant="caption" color="textTertiary" center>
+                  Want a human instead? Call {hotline.phone}
+                </AppText>
+              </Pressable>
+            </View>
+          </>
+        )}
+      </View>
+    </View>
   );
 }
 
+const ORB = 200;
+
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    paddingHorizontal: spacing.xl,
+  container: { flex: 1, backgroundColor: colors.bg },
+  content: { flex: 1, paddingHorizontal: spacing.xl, justifyContent: 'space-between' },
+  topBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'space-between',
+    minHeight: 44,
   },
-  close: { alignSelf: 'flex-end', paddingVertical: spacing.md },
+  close: { paddingVertical: spacing.sm, paddingLeft: spacing.lg },
   orbWrap: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  orb: {
-    width: 220,
-    height: 220,
-    borderRadius: 110,
+  halo: {
+    position: 'absolute',
+    width: ORB,
+    height: ORB,
+    borderRadius: ORB / 2,
     backgroundColor: colors.accent,
-    opacity: 0.85,
-    shadowColor: colors.accent,
-    shadowOpacity: 0.7,
-    shadowRadius: 40,
-    shadowOffset: { width: 0, height: 0 },
-    elevation: 12,
   },
-  phaseLabel: { position: 'absolute' },
-  why: { gap: spacing.xs, marginBottom: spacing.xl },
-  actions: { gap: spacing.md, paddingBottom: spacing.lg },
-  hotlineLink: { paddingVertical: spacing.xs },
+  orb: {
+    position: 'absolute',
+    width: ORB,
+    height: ORB,
+    borderRadius: ORB / 2,
+    borderWidth: 1,
+    borderColor: 'rgba(155, 164, 240, 0.45)',
+    backgroundColor: 'rgba(155, 164, 240, 0.10)',
+  },
+  phaseText: { alignItems: 'center' },
+  hint: { marginTop: spacing.xs },
+  reassure: { marginBottom: spacing.xxl },
+  savedBlock: { gap: spacing.xs, marginBottom: spacing.xl },
+  actions: { gap: spacing.md, paddingBottom: spacing.sm },
+  hotlineLink: { paddingVertical: spacing.sm },
 });

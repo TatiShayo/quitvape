@@ -2,13 +2,27 @@ import { buildWeeklyReport } from '../weeklyReport';
 import { CheckIn, CravingEvent } from '../types';
 
 describe('buildWeeklyReport', () => {
-  const now = new Date(2026, 0, 15, 12, 0, 0); // Thursday
+  const now = new Date(2026, 0, 15, 12, 0, 0); // Jan 15 2026
 
   it('returns 7 days ending on now (inclusive)', () => {
     const report = buildWeeklyReport([], [], now);
     expect(report.days).toHaveLength(7);
     expect(report.days[6]).toBe('2026-01-15');
     expect(report.days[0]).toBe('2026-01-09');
+  });
+
+  it('correctly builds 7 calendar days across month and year boundaries', () => {
+    const jan2 = new Date(2026, 0, 2, 12, 0, 0);
+    const report = buildWeeklyReport([], [], jan2);
+    expect(report.days).toEqual([
+      '2025-12-27',
+      '2025-12-28',
+      '2025-12-29',
+      '2025-12-30',
+      '2025-12-31',
+      '2026-01-01',
+      '2026-01-02',
+    ]);
   });
 
   it('counts resisted vs slipped cravings within the trailing 7-day window', () => {

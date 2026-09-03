@@ -1,9 +1,20 @@
 import { useCallback, useEffect, useMemo } from 'react';
-import { AppState, StyleSheet, View } from 'react-native';
+import { AppState, Pressable, StyleSheet, View } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Wind } from 'lucide-react-native';
-import { AppText, Button, Card, CheckInPrompt, LungVisual, StreakRing, Screen } from '@/ui';
-import { colors, spacing } from '@/theme';
+import { Wind, ChevronRight } from 'lucide-react-native';
+import {
+  AppText,
+  Button,
+  Card,
+  CheckInPrompt,
+  DayCounter,
+  LungVisual,
+  Stat,
+  StatDivider,
+  StatRow,
+  Screen,
+} from '@/ui';
+import { colors, skyAt, skyProgress, spacing } from '@/theme';
 import { useQuitStore, useSettingsStore } from '@/store';
 import { useNow } from '@/app-core/useNow';
 import { scheduleAllNotifications } from '@/app-core/notifications';
@@ -72,6 +83,10 @@ export default function Home() {
   const milestone = useMemo(() => milestoneProgress(dayCount), [dayCount]);
   const stage = useMemo(() => lungStage(dayCount), [dayCount]);
 
+  // The sky lightens with the streak. Computed here and passed down so the whole screen
+  // sits in an atmosphere the user earned rather than a fixed background.
+  const sky = useMemo(() => skyAt(skyProgress(dayCount)), [dayCount]);
+
   if (!plan) {
     return (
       <Screen>
@@ -84,97 +99,98 @@ export default function Home() {
   const live = liveDuration(start, now);
   const days = dayCount;
   const saved = moneySaved(plan.vapeCostPerWeek, live.totalMs);
-  const taper = plan.method === 'taper' ? taperStatus(plan.baselinePuffsPerDay, start, now, puffsToday(now)) : null;
+  const taper =
+    plan.method === 'taper'
+      ? taperStatus(plan.baselinePuffsPerDay, start, now, puffsToday(now))
+      : null;
 
   return (
-    <Screen scroll>
-      <AppText variant="overline" color="accent">
-        {plan.method === 'taper' ? 'Taper plan' : 'Vape-free streak'}
-      </AppText>
+    <Screen scroll sky={sky}>
+      <DayCounter
+        days={live.days}
+        hours={live.hours}
+        minutes={live.minutes}
+        seconds={live.seconds}
+        milestoneProgress={milestone.progress}
+        nextMilestone={milestone.next ?? null}
+      />
 
-      <View style={styles.ringWrap}>
-        <StreakRing progress={milestone.progress}>
-          <AppText variant="displayXL" tabular center>
-            {live.days}
-          </AppText>
-          <AppText variant="caption" color="textTertiary" center>
-            day{live.days === 1 ? '' : 's'}
-          </AppText>
-          <AppText variant="caption" color="textSecondary" tabular center style={styles.hms}>
-            {String(live.hours).padStart(2, '0')}:{String(live.minutes).padStart(2, '0')}:
-            {String(live.seconds).padStart(2, '0')}
-          </AppText>
-        </StreakRing>
-      </View>
+      {/* Panic is the highest-stakes action in the app and it sits above the fold,
+          reachable with a thumb. Everything else can be scrolled to. */}
+      <Button
+        label="I need help right now"
+        onPress={() => router.push('/panic')}
+        haptic
+        leftIcon={<Wind color={colors.textInverse} size={20} />}
+        accessibilityHint="Opens a guided breathing exercise to ride out a craving"
+        style={styles.panic}
+      />
 
-      {milestone.next ? (
-        <AppText variant="caption" color="textSecondary" center style={styles.milestone}>
-          {milestone.next - days} day{milestone.next - days === 1 ? '' : 's'} to your{' '}
-          {milestone.next}-day milestone
-        </AppText>
-      ) : (
-        <AppText variant="caption" color="textSecondary" center style={styles.milestone}>
-          Every milestone cleared. You are the proof.
-        </AppText>
-      )}
-
-      <View style={styles.lungRow}>
-        <LungVisual stage={stage} size={120} />
-        <View style={styles.lungCopy}>
-          <AppText variant="bodyStrong">Your lungs are healing</AppText>
-          <AppText variant="caption" color="textTertiary">
-            Visual clears as your streak grows — see the full timeline in Health.
-          </AppText>
-        </View>
-      </View>
-
-      <Card style={styles.moneyCard}>
-        <AppText variant="caption" color="textTertiary">
-          Money saved
-        </AppText>
-        <AppText variant="displayL" color="money" tabular>
-          ${formatMoney(saved)}
-        </AppText>
+      <Card tone="reward" style={styles.block}>
+        <StatRow>
+          <Stat
+            label="Kept in your pocket"
+            value={`$${formatMoney(saved)}`}
+            tone="reward"
+            size="lg"
+            footnote="since you started"
+          />
+        </StatRow>
       </Card>
 
       {taper ? (
-        <Card style={styles.taperCard}>
-          <AppText variant="caption" color="textTertiary">
-            Today&apos;s allowance (week {taper.weekIndex + 1})
-          </AppText>
-          <AppText variant="displayM" color={taper.overLimit ? 'danger' : 'accent'} tabular>
-            {taper.remaining} / {taper.allowance}
-          </AppText>
+        <Card style={styles.block}>
+          <StatRow>
+            <Stat
+              label={`Week ${taper.weekIndex + 1} allowance`}
+              value={`${taper.remaining}/${taper.allowance}`}
+              tone={taper.overLimit ? 'care' : 'accent'}
+              footnote={taper.overLimit ? 'over for today — tomorrow resets' : 'left for today'}
+            />
+          </StatRow>
           {taper.readyToQuit ? (
-            <AppText variant="caption" color="success">
-              You&apos;re down to a small allowance — ready to go all the way?
+            <AppText variant="caption" color="accent" style={styles.taperNote}>
+              You&apos;re down to a small allowance. Ready to go all the way?
             </AppText>
           ) : null}
           <Button
             label="Log a puff"
             variant="secondary"
             onPress={() => logPuff(now)}
-            style={styles.logPuffButton}
+            style={styles.taperButton}
           />
         </Card>
       ) : null}
 
-      {buddy?.paired ? (
-        <Card style={styles.buddyCard}>
-          <AppText variant="caption" color="textTertiary">
-            Buddy streak
-          </AppText>
-          <View style={styles.buddyRow}>
-            <AppText variant="displayM" tabular color="accent">
-              {days}d
-            </AppText>
-            <AppText variant="body" color="textTertiary">
-              vs
-            </AppText>
-            <AppText variant="displayM" tabular>
-              {buddy.buddyStreakDays ?? 0}d
-            </AppText>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Open health timeline"
+        onPress={() => router.push('/(app)/health')}
+      >
+        <Card style={styles.block}>
+          <View style={styles.lungRow}>
+            <LungVisual stage={stage} size={96} />
+            <View style={styles.lungCopy}>
+              <AppText variant="overline" color="textTertiary">
+                Recovering
+              </AppText>
+              <AppText variant="bodyStrong">Your lungs are clearing</AppText>
+              <AppText variant="caption" color="textTertiary">
+                See what has already changed inside your body
+              </AppText>
+            </View>
+            <ChevronRight color={colors.textTertiary} size={18} />
           </View>
+        </Card>
+      </Pressable>
+
+      {buddy?.paired ? (
+        <Card style={styles.block}>
+          <StatRow>
+            <Stat label="You" value={`${days}d`} tone="accent" />
+            <StatDivider />
+            <Stat label="Your buddy" value={`${buddy.buddyStreakDays ?? 0}d`} />
+          </StatRow>
         </Card>
       ) : null}
 
@@ -186,42 +202,28 @@ export default function Home() {
         }}
       />
 
-      <Button
-        label="Panic button"
-        onPress={() => router.push('/panic')}
-        haptic
-        leftIcon={<Wind color={colors.textInverse} size={20} />}
-        style={styles.panic}
-      />
-
-      <Button
-        label="Achievements"
-        onPress={() => router.push('/achievements')}
-        variant="secondary"
-        style={styles.achievements}
-      />
-
-      <Button
-        label={buddy?.paired ? 'Buddy' : 'Invite a buddy'}
-        onPress={() => router.push('/buddy')}
-        variant="secondary"
-        style={styles.achievements}
-      />
+      <View style={styles.secondary}>
+        <Button
+          label="Achievements"
+          onPress={() => router.push('/achievements')}
+          variant="secondary"
+        />
+        <Button
+          label={buddy?.paired ? 'Your buddy' : 'Invite a buddy'}
+          onPress={() => router.push('/buddy')}
+          variant="secondary"
+        />
+      </View>
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  ringWrap: { alignItems: 'center', marginTop: spacing.lg },
-  hms: { marginTop: spacing.xs },
-  milestone: { marginTop: spacing.md, marginBottom: spacing.xl },
-  lungRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.lg, marginBottom: spacing.xl },
+  panic: { marginBottom: spacing.xxl },
+  block: { marginBottom: spacing.lg },
+  lungRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.lg },
   lungCopy: { flex: 1, gap: spacing.xs },
-  moneyCard: { marginBottom: spacing.lg },
-  buddyCard: { marginBottom: spacing.lg, gap: spacing.sm },
-  buddyRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
-  taperCard: { marginBottom: spacing.lg, gap: spacing.sm },
-  logPuffButton: { marginTop: spacing.sm },
-  panic: { marginTop: spacing.xl, marginBottom: spacing.md },
-  achievements: { marginBottom: spacing.md },
+  taperNote: { marginTop: spacing.md },
+  taperButton: { marginTop: spacing.lg },
+  secondary: { gap: spacing.md, marginTop: spacing.xl },
 });

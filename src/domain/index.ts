@@ -1,4 +1,4 @@
-/** Domain math barrel. Pure, unit-tested functions (streak/money/dependency/taper). */
+/** Domain math barrel. Pure, unit-tested functions. */
 export * from './types';
 export * from './time';
 export * from './streak';
@@ -8,3 +8,12 @@ export * from './taper';
 export * from './achievements';
 export * from './weeklyReport';
 export * from './dangerHour';
+export * from './health';
+export * from './cravings';
+export * from './exportImport';
+export * from './notifications';
+export * from './hotlines';
+export * from './profanity';
+export * from './anonHandle';
+export * from './coaching';
+export * from './reviewPrompt';

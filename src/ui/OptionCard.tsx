@@ -57,7 +57,9 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     paddingVertical: spacing.lg,
     paddingHorizontal: spacing.lg,
-    minHeight: 44,
+    // Oversized target: these rows are tapped during onboarding and immediately after a
+    // slip, both low-precision moments. 56 is comfortably past the 44 floor.
+    minHeight: 56,
   },
   cardSelected: { borderColor: colors.accent, backgroundColor: colors.surfaceElevated },
   textCol: { flex: 1, paddingRight: spacing.md },

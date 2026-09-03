@@ -2,27 +2,58 @@
  * Analytics provider (PostHog). No-op mock when unconfigured.
  *
  * PRIVACY GUARDRAIL: this app is health-adjacent. NEVER pass quit/relapse/craving
- * details as event properties. Property values are constrained to primitives and a
- * runtime scrubber drops any key that looks like it carries sensitive content.
+ * details, PII, financial amounts, or user text as event properties. Property values
+ * are strictly sanitized, key names are checked against a blocklist, and value contents
+ * are scrubbed against email/phone patterns and excessive length.
  */
 import PostHog from 'posthog-react-native';
 import { env } from '@/config/env';
 import { AnalyticsProps, AnalyticsProvider } from '../types';
 
-/** Keys we refuse to send even if a caller passes them by mistake. */
-const BLOCKED_KEY = /(relapse|craving|trigger|quit_?date|mood|handle|note|body|message)/i;
+/** Sensitive keys we refuse to send under any circumstances. */
+export const BLOCKED_KEY =
+  /(relapse|craving|trigger|quit_?date|streak_?start|mood|handle|anon|note|body|message|text|content|comment|input|prompt|email|phone|address|ssn|token|secret|medical|health|puff|spend|cost|dollar|money|price|amount)/i;
 
-/** Scrubbed props never contain `undefined` values (PostHog's JSON type disallows it). */
-type ScrubbedProps = Record<string, string | number | boolean>;
+/** Email detection pattern. */
+const EMAIL_REGEX = /[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+/;
 
-function scrub(props?: AnalyticsProps): ScrubbedProps | undefined {
-  if (!props) return undefined;
+/** Phone number detection pattern (7+ continuous/spaced digits with optional +). */
+const PHONE_REGEX = /(\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}/;
+
+/** Scrubbed props never contain `undefined` or sensitive values. */
+export type ScrubbedProps = Record<string, string | number | boolean>;
+
+/** Pure property sanitizer for analytics telemetry. Exported for hermetic testing. */
+export function scrub(props?: AnalyticsProps): ScrubbedProps | undefined {
+  if (!props || typeof props !== 'object') return undefined;
   const out: ScrubbedProps = {};
+
   for (const [k, v] of Object.entries(props)) {
     if (BLOCKED_KEY.test(k)) continue;
-    if (v !== undefined) out[k] = v;
+    if (v === undefined || v === null) continue;
+
+    if (typeof v === 'boolean') {
+      out[k] = v;
+    } else if (typeof v === 'number') {
+      if (Number.isFinite(v)) {
+        out[k] = v;
+      }
+    } else if (typeof v === 'string') {
+      const trimmed = v.trim();
+      // Drop strings that contain email or phone numbers
+      if (EMAIL_REGEX.test(trimmed) || PHONE_REGEX.test(trimmed)) {
+        continue;
+      }
+      // Truncate excessively long strings to 64 chars to prevent free-text payload leaks
+      if (trimmed.length > 64) {
+        out[k] = trimmed.slice(0, 64);
+      } else {
+        out[k] = trimmed;
+      }
+    }
   }
-  return out;
+
+  return Object.keys(out).length > 0 ? out : undefined;
 }
 
 function createNoopAnalytics(): AnalyticsProvider {

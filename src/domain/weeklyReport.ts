@@ -4,7 +4,7 @@
  * same pattern as the other domain modules.
  */
 import { CheckIn, CravingEvent } from './types';
-import { localDateKey, MS_PER_DAY } from './time';
+import { addCalendarDays, localDateKey, MS_PER_DAY } from './time';
 
 export interface WeeklyReport {
   /** Last 7 local calendar dates (oldest first), YYYY-MM-DD. */
@@ -26,7 +26,7 @@ export function buildWeeklyReport(
 ): WeeklyReport {
   const days: string[] = [];
   for (let i = 6; i >= 0; i--) {
-    days.push(localDateKey(new Date(now.getTime() - i * MS_PER_DAY)));
+    days.push(localDateKey(addCalendarDays(now, -i)));
   }
   const daySet = new Set(days);
 

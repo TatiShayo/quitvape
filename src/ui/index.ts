@@ -13,3 +13,7 @@ export { StreakRing } from './StreakRing';
 export { CheckInPrompt } from './CheckInPrompt';
 export { WhyIQuitReveal } from './WhyIQuitReveal';
 export { ShareCard } from './ShareCard';
+export { Sky, SkyProvider, useSky } from './Sky';
+export { DayCounter } from './DayCounter';
+export { Stat, StatRow, StatDivider } from './Stat';
+export { ErrorBoundary } from './ErrorBoundary';

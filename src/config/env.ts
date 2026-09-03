@@ -21,14 +21,19 @@ const posthogKey = read(process.env.EXPO_PUBLIC_POSTHOG_KEY);
 const posthogHost = read(process.env.EXPO_PUBLIC_POSTHOG_HOST) ?? 'https://us.i.posthog.com';
 const sentryDsn = read(process.env.EXPO_PUBLIC_SENTRY_DSN);
 
-const revenueCatKey = Platform.select({
-  ios: revenueCatIos,
-  android: revenueCatAndroid,
-  default: revenueCatIos ?? revenueCatAndroid,
-});
+const isDev = typeof __DEV__ !== 'undefined' ? __DEV__ : process.env.NODE_ENV !== 'production';
+
+const revenueCatKey =
+  typeof Platform !== 'undefined' && Platform.select
+    ? Platform.select({
+        ios: revenueCatIos,
+        android: revenueCatAndroid,
+        default: revenueCatIos ?? revenueCatAndroid,
+      })
+    : revenueCatIos ?? revenueCatAndroid;
 
 export const env = {
-  isDev: __DEV__,
+  isDev,
 
   supabase: {
     url: supabaseUrl,

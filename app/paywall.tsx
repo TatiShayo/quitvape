@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { AppText, Button, Card, Screen } from '@/ui';
-import { colors, radii, spacing } from '@/theme';
+import { colors, radii, skyAt, spacing } from '@/theme';
 import { AnalyticsEvent, getAnalytics, getErrors, getPurchasesProvider } from '@/providers';
 import { Offering, PackageId } from '@/providers/types';
 import { useOnboardingStore, useQuitStore } from '@/store';
@@ -88,28 +88,33 @@ export default function Paywall() {
   }
 
   return (
-    <Screen scroll>
-      <AppText variant="overline" color="accent">
-        Your quit plan is ready
+    // The paywall sits at first light, not at night. It is shown before any streak
+    // exists, so it previews the destination rather than reporting a position.
+    <Screen scroll sky={skyAt(0.88)}>
+      <AppText variant="overline" color="textTertiary">
+        Your plan is ready
       </AppText>
-      <AppText variant="displayM" style={styles.headline}>
-        Quit for good — starting today
+      <AppText variant="displayL" style={styles.headline}>
+        This is the last time you start.
       </AppText>
 
-      <Card style={styles.proofCard}>
+      {/* Their own numbers, not generic claims. Self-referent framing is recalled and
+          acted on more reliably than the same fact stated impersonally. */}
+      <Card tone="reward" style={styles.proofCard}>
         <View style={styles.proofRow}>
-          <View>
-            <AppText variant="caption" color="textTertiary">
-              Dependency score
+          <View style={styles.proofCol}>
+            <AppText variant="overline" color="textTertiary">
+              Dependency
             </AppText>
             <AppText variant="displayM" tabular>
               {score.toFixed(1)}
               <AppText variant="title" color="textTertiary"> /10</AppText>
             </AppText>
           </View>
-          <View>
-            <AppText variant="caption" color="textTertiary">
-              You could save (1 yr)
+          <View style={styles.proofDivider} />
+          <View style={styles.proofCol}>
+            <AppText variant="overline" color="textTertiary">
+              Back in a year
             </AppText>
             <AppText variant="displayM" color="money" tabular>
               ${formatMoney(oneYear)}
@@ -117,7 +122,8 @@ export default function Paywall() {
           </View>
         </View>
         <AppText variant="caption" color="textTertiary" style={styles.proofNote}>
-          This app costs less than two weeks of vaping.
+          Based on the ${weeklySpend}/week you told us you spend. The app costs less than
+          two weeks of it.
         </AppText>
       </Card>
 
@@ -183,26 +189,34 @@ export default function Paywall() {
 }
 
 const styles = StyleSheet.create({
-  headline: { marginTop: spacing.sm, marginBottom: spacing.xl },
-  proofCard: { marginBottom: spacing.xl },
-  proofRow: { flexDirection: 'row', justifyContent: 'space-between' },
-  proofNote: { marginTop: spacing.md },
+  headline: { marginTop: spacing.md, marginBottom: spacing.xl },
+  proofCard: { marginBottom: spacing.xxl },
+  proofRow: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.lg },
+  proofCol: { flex: 1, gap: spacing.xs },
+  proofDivider: {
+    width: StyleSheet.hairlineWidth,
+    alignSelf: 'stretch',
+    backgroundColor: colors.border,
+  },
+  proofNote: { marginTop: spacing.lg },
   plans: { gap: spacing.md, marginBottom: spacing.lg },
   plan: {
     borderRadius: radii.lg,
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.border,
     backgroundColor: colors.surface,
     padding: spacing.lg,
     gap: spacing.sm,
+    minHeight: 56,
   },
   planSelected: { borderColor: colors.accent, backgroundColor: colors.surfaceElevated },
   planHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  /** Amber, not periwinkle — a discount is a reward signal, and amber is that channel. */
   badge: {
-    backgroundColor: colors.accent,
+    backgroundColor: colors.reward,
     borderRadius: radii.pill,
     paddingHorizontal: spacing.md,
-    paddingVertical: 2,
+    paddingVertical: 3,
   },
   cta: { marginBottom: spacing.md },
   error: { marginBottom: spacing.md },
