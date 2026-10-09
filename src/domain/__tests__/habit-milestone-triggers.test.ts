@@ -1,7 +1,6 @@
 import {
   HEALTH_METRICS,
   calculateHealthMilestones,
-  getOverallHealthScore,
 } from "../health";
 import { MS_PER_MINUTE, MS_PER_HOUR, MS_PER_DAY } from "../time";
 

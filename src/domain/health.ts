@@ -159,11 +159,17 @@ export function calculateMilestonePercentage(elapsedMs: number, targetMs: number
   return Math.round(p * 1000) / 10;
 }
 
-/** Evaluates all health metrics against elapsed milliseconds. */
-export function getOverallHealthRecovery(elapsedMs: number): OverallHealthRecovery {
+/**
+ * Per-milestone statuses for the given elapsed time.
+ *
+ * This is the seam the milestone-trigger suite tests against; the identical
+ * mapping used to live inline inside getOverallHealthRecovery, so callers of
+ * either stay consistent.
+ */
+export function calculateHealthMilestones(elapsedMs: number): HealthMilestoneStatus[] {
   const ms = Math.max(0, Number.isFinite(elapsedMs) ? elapsedMs : 0);
 
-  const statuses: HealthMilestoneStatus[] = HEALTH_METRICS.map((m) => {
+  return HEALTH_METRICS.map((m) => {
     const progress = calculateHealthProgress(ms, m.targetMs);
     const percentage = Math.round(progress * 1000) / 10;
     const isCompleted = ms >= m.targetMs;
@@ -176,6 +182,11 @@ export function getOverallHealthRecovery(elapsedMs: number): OverallHealthRecove
       remainingMs,
     };
   });
+}
+
+/** Evaluates all health metrics against elapsed milliseconds. */
+export function getOverallHealthRecovery(elapsedMs: number): OverallHealthRecovery {
+  const statuses = calculateHealthMilestones(elapsedMs);
 
   const completedCount = statuses.filter((s) => s.isCompleted).length;
   const nextMilestone = statuses.find((s) => !s.isCompleted) ?? null;
