@@ -55,12 +55,10 @@ serve(async (req: Request) => {
   }
 
   try {
-    // 1. Kill-switch FIRST: instantly disables the feature without redeploy.
     if (Deno.env.get('COACH_ENABLED') === 'false') {
       return jsonResponse({ error: 'Coach service is temporarily unavailable' }, 503);
     }
 
-    // 2. Verify the caller's JWT. The validated user id is the only identity we use.
     const authHeader = req.headers.get('Authorization') ?? '';
     const jwt = authHeader.replace(/^Bearer\s+/i, '');
     if (!jwt) {
@@ -82,7 +80,6 @@ serve(async (req: Request) => {
     }
     const userId = userData.user.id;
 
-    // 3. Validate input before spending any quota.
     let message: unknown;
     try {
       ({ message } = (await req.json()) as CoachRequest);
@@ -98,7 +95,6 @@ serve(async (req: Request) => {
       return jsonResponse({ error: 'Message cannot be empty' }, 400);
     }
 
-    // 4. Atomic per-user daily quota (advisory-locked in the RPC; no TOCTOU race).
     const adminClient = createClient(supabaseUrl, serviceKey);
     const { data: allowed, error: quotaError } = await adminClient.rpc('consume_coach_quota', {
       p_user_id: userId,
@@ -115,7 +111,6 @@ serve(async (req: Request) => {
       );
     }
 
-    // 5. Call Anthropic (mock fallback when the key is absent, dev/test only).
     const apiKey = Deno.env.get('ANTHROPIC_API_KEY');
     if (!apiKey) {
       return jsonResponse(
@@ -163,7 +158,6 @@ serve(async (req: Request) => {
       return jsonResponse({ error: 'Invalid response from coach' }, 500);
     }
 
-    // 6. Enforce the reply word cap regardless of what the model returned.
     let coachReply = textContent.text;
     const words = coachReply.split(/\s+/);
     if (words.length > MAX_REPLY_WORDS) {

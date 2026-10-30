@@ -152,7 +152,6 @@ export function calendarDurationBreakdown(earlier: Date, later: Date): CalendarD
 
   let cursor = new Date(earlier);
 
-  // 1. Advance whole years
   let years = 0;
   while (true) {
     const nextYear = addCalendarYears(cursor, 1);
@@ -164,7 +163,6 @@ export function calendarDurationBreakdown(earlier: Date, later: Date): CalendarD
     }
   }
 
-  // 2. Advance whole months
   let months = 0;
   while (true) {
     const nextMonth = addCalendarMonths(cursor, 1);
@@ -176,7 +174,6 @@ export function calendarDurationBreakdown(earlier: Date, later: Date): CalendarD
     }
   }
 
-  // 3. Advance whole days
   let days = 0;
   while (true) {
     const nextDay = addCalendarDays(cursor, 1);
@@ -188,7 +185,6 @@ export function calendarDurationBreakdown(earlier: Date, later: Date): CalendarD
     }
   }
 
-  // 4. Remainder milliseconds
   let remainderMs = Math.max(0, later.getTime() - cursor.getTime());
   const hours = Math.floor(remainderMs / MS_PER_HOUR);
   remainderMs %= MS_PER_HOUR;

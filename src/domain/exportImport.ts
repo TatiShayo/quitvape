@@ -101,7 +101,6 @@ export function validateAndSanitizeImport(rawJson: string): ImportValidationResu
   const rawData = obj.data as Record<string, unknown>;
   const warnings: string[] = [];
 
-  // 1. Plan validation
   let plan: QuitPlan | null = null;
   if (rawData.plan !== null && typeof rawData.plan === 'object') {
     const p = rawData.plan as Record<string, unknown>;
@@ -146,7 +145,6 @@ export function validateAndSanitizeImport(rawJson: string): ImportValidationResu
     };
   }
 
-  // 2. Relapses validation
   const relapses: Relapse[] = [];
   if (Array.isArray(rawData.relapses)) {
     for (const r of rawData.relapses) {
@@ -162,7 +160,6 @@ export function validateAndSanitizeImport(rawJson: string): ImportValidationResu
     }
   }
 
-  // 3. Cravings validation
   const cravings: CravingEvent[] = [];
   if (Array.isArray(rawData.cravings)) {
     for (const c of rawData.cravings) {
@@ -183,7 +180,6 @@ export function validateAndSanitizeImport(rawJson: string): ImportValidationResu
     }
   }
 
-  // 4. CheckIns validation
   const checkIns: CheckIn[] = [];
   if (Array.isArray(rawData.checkIns)) {
     for (const ci of rawData.checkIns) {
@@ -198,7 +194,6 @@ export function validateAndSanitizeImport(rawJson: string): ImportValidationResu
     }
   }
 
-  // 5. Achievements
   const achievementsUnlocked: string[] = [];
   if (Array.isArray(rawData.achievementsUnlocked)) {
     for (const a of rawData.achievementsUnlocked) {
@@ -208,7 +203,6 @@ export function validateAndSanitizeImport(rawJson: string): ImportValidationResu
     }
   }
 
-  // 6. PuffLog validation
   const puffLog: Record<string, number> = {};
   if (typeof rawData.puffLog === 'object' && rawData.puffLog !== null) {
     const rawLog = rawData.puffLog as Record<string, unknown>;
@@ -219,7 +213,6 @@ export function validateAndSanitizeImport(rawJson: string): ImportValidationResu
     }
   }
 
-  // 7. NotificationPrefs validation
   let notificationPrefs: NotificationPrefs | undefined;
   if (typeof rawData.notificationPrefs === 'object' && rawData.notificationPrefs !== null) {
     const np = rawData.notificationPrefs as Record<string, unknown>;

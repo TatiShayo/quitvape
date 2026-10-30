@@ -5,9 +5,7 @@
  */
 import { EncouragementPresetId } from '@/content/encouragements';
 
-// ---------------------------------------------------------------------------
 // Purchases / entitlements (RevenueCat)
-// ---------------------------------------------------------------------------
 
 export type PackageId = 'weekly' | 'lifetime';
 
@@ -61,9 +59,7 @@ export interface PurchasesProvider {
   onEntitlementChange(listener: (status: EntitlementStatus) => void): () => void;
 }
 
-// ---------------------------------------------------------------------------
 // Analytics (PostHog). NEVER pass quit/relapse/craving data as properties.
-// ---------------------------------------------------------------------------
 
 export type AnalyticsProps = Record<string, string | number | boolean | undefined>;
 
@@ -75,9 +71,7 @@ export interface AnalyticsProvider {
   reset(): void;
 }
 
-// ---------------------------------------------------------------------------
 // Error monitoring (Sentry). Scrub PII; no quit/relapse data.
-// ---------------------------------------------------------------------------
 
 export interface ErrorProvider {
   init(): void;
@@ -86,9 +80,7 @@ export interface ErrorProvider {
   setUser(id: string | undefined): void;
 }
 
-// ---------------------------------------------------------------------------
 // Backend (Supabase). Anonymous, device-bound auth.
-// ---------------------------------------------------------------------------
 
 export interface CommunityPost {
   id: string;

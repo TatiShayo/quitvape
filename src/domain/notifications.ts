@@ -73,7 +73,6 @@ export function generateCompleteNotificationPlan(input: SchedulePlanInput): Sche
   const now = input.now ?? new Date();
   const { prefs } = input;
 
-  // 1. Morning Motivation
   if (prefs.morningMotivation) {
     const { hour, minute } = parseTimeHHMM(prefs.morningTime, 8, 0);
     plan.push({
@@ -88,7 +87,6 @@ export function generateCompleteNotificationPlan(input: SchedulePlanInput): Sche
     });
   }
 
-  // 2. Evening Check-in
   if (prefs.eveningCheckIn) {
     plan.push({
       identifier: 'qv-evening',
@@ -102,7 +100,6 @@ export function generateCompleteNotificationPlan(input: SchedulePlanInput): Sche
     });
   }
 
-  // 3. Weekly Report (Sunday 6pm)
   if (prefs.weeklyReport) {
     plan.push({
       identifier: 'qv-weekly-report',
@@ -116,7 +113,6 @@ export function generateCompleteNotificationPlan(input: SchedulePlanInput): Sche
     });
   }
 
-  // 4. Danger Hour support ping
   if (prefs.dangerHour) {
     const dangerHour = detectDangerHour(input.cravings);
     if (dangerHour !== undefined) {
@@ -134,7 +130,6 @@ export function generateCompleteNotificationPlan(input: SchedulePlanInput): Sche
     }
   }
 
-  // 5. Milestones
   if (prefs.milestones && !Number.isNaN(input.streakStart.getTime())) {
     const nextMilestone = STREAK_MILESTONES.find((m) => m > input.streakDays);
     if (nextMilestone) {
